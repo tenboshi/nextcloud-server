@@ -68,7 +68,8 @@ class Backend {
 			->from('calendar_reminders', 'cr')
 			->where($query->expr()->lte('cr.notification_date', $query->createNamedParameter($this->timeFactory->getTime())))
 			->join('cr', 'calendarobjects', 'co', $query->expr()->eq('cr.object_id', 'co.id'))
-			->join('cr', 'calendars', 'c', $query->expr()->eq('cr.calendar_id', 'c.id'));
+			->join('cr', 'calendars', 'c', $query->expr()->eq('cr.calendar_id', 'c.id'))
+			->groupBy('cr.notification_date', 'cr.event_hash');
 		$stmt = $query->execute();
 
 		return array_map(
