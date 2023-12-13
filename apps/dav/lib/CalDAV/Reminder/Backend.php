@@ -64,7 +64,7 @@ class Backend {
 	 */
 	public function getRemindersToProcess():array {
 		$query = $this->db->getQueryBuilder();
-		$query->select(['cr.*', 'co.calendardata', 'c.displayname', 'c.principaluri'])
+		$query->select(['cr.*', 'co.calendardata', 'c.displayname', 'c.principaluri','cr.notification_date', 'cr.event_hash'])
 			->from('calendar_reminders', 'cr')
 			->where($query->expr()->lte('cr.notification_date', $query->createNamedParameter($this->timeFactory->getTime())))
 			->join('cr', 'calendarobjects', 'co', $query->expr()->eq('cr.object_id', 'co.id'))

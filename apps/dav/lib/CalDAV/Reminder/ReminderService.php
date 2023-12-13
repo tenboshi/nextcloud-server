@@ -468,15 +468,13 @@ class ReminderService {
 	 */
 	private function writeRemindersToDatabase(array $reminders): void {
 		$uniqueReminders = [];
-		$seen = [];
 		foreach ($reminders as $reminder) {
 			$key = $reminder['notification_date']. $reminder['event_hash'];
-			if(!isset($seen[$key])) {
-				$seen[$key] = true;
-				$uniqueReminders[] = $reminder;
+			if(!isset($uniqueReminders[$key])) {
+				$uniqueReminders[$key] = $reminder;
 			}
 		}
-		foreach ($reminders as $uniqueReminders) {
+		foreach (array_values($uniqueReminders) as $reminder) {
 			$this->backend->insertReminder(
 				(int) $reminder['calendar_id'],
 				(int) $reminder['object_id'],
