@@ -70,7 +70,7 @@ class BlockLegacyClientPlugin extends ServerPlugin {
 		if (isset($versionMatches[1]) &&
 			version_compare($versionMatches[1], $minimumSupportedDesktopVersion) === -1) {
 			$customClientDesktopLink = $this->config->getSystemValue('customclient_desktop', 'https://nextcloud.com/install/#install-clients');
-			throw new \Sabre\DAV\Exception\Forbidden('This version of the client is unsupported. Upgrade to version '.$minimumSupportedDesktopVersion.' or later. Please open '.$customClientDesktopLink.' to download the update.');
+			throw new \Sabre\DAV\Exception\Forbidden('This version of the client is unsupported. Upgrade to <a href="'.$customClientDesktopLink.'">version '.$minimumSupportedDesktopVersion.' or later</a>.');
 		}
 	}
 }
