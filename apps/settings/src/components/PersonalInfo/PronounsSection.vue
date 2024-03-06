@@ -1,7 +1,7 @@
 <!--
-	- @copyright 2022 Christopher Ng <chrng8@gmail.com>
+	- @copyright Copyright (c) 2024 John Molakvoæ <skjnldsv@protonmail.com>
 	-
-	- @author Christopher Ng <chrng8@gmail.com>
+	- @author John Molakvoæ <skjnldsv@protonmail.com>
 	-
 	- @license AGPL-3.0-or-later
 	-
