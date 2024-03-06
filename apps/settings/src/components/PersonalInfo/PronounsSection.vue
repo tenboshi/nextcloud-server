@@ -23,7 +23,7 @@
 <template>
 	<AccountPropertySection v-bind.sync="pronouns"
 		autocomplete="organization-title"
-		:placeholder="t('settings', 'Your pronouns')" />
+		:placeholder="randomPronounsPlaceholder" />
 </template>
 
 <script>
@@ -46,6 +46,18 @@ export default {
 		return {
 			pronouns: { ...pronouns, readable: NAME_READABLE_ENUM[pronouns.name] },
 		}
+	},
+
+	computed: {
+		randomPronounsPlaceholder() {
+			const pronouns = [
+				this.t('settings', 'she/her'),
+				this.t('settings', 'he/him'),
+				this.t('settings', 'they/them'),
+			]
+			const pronounsExample = pronouns[Math.floor(Math.random() * pronouns.length)]
+			return this.t('settings', `Your pronouns. E.g. ${pronounsExample}`, { pronounsExample })
+		},
 	},
 }
 </script>
