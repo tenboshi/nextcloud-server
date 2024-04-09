@@ -69,7 +69,7 @@ class Backend {
 			->where($query->expr()->lte('cr.notification_date', $query->createNamedParameter($this->timeFactory->getTime())))
 			->join('cr', 'calendarobjects', 'co', $query->expr()->eq('cr.object_id', 'co.id'))
 			->join('cr', 'calendars', 'c', $query->expr()->eq('cr.calendar_id', 'c.id'))
-			->groupBy('cr.notification_date', 'cr.event_hash');
+			->groupBy( 'cr.event_hash', 'cr.notification_date');
 		$stmt = $query->execute();
 
 		return array_map(
