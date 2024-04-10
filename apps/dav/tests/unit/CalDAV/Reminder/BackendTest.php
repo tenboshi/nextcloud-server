@@ -126,6 +126,35 @@ class BackendTest extends TestCase {
 		$this->assertCount(3, $rows);
 	}
 
+	public function testGetDuplicateRemindersToProcess(): void {
+		$this->timeFactory->expects($this->exactly(1))
+			->method('getTime')
+			->with()
+			->willReturn(123457);
+
+		$rows = $this->reminderBackend->getRemindersToProcess();
+
+		$this->assertCount(1, $rows);
+		unset($rows[0]['id']);
+
+		$this->assertEquals($rows[0], [
+			'calendar_id' => 1,
+			'object_id' => 1,
+			'uid' => 'asd',
+			'is_recurring' => false,
+			'recurrence_id' => 123458,
+			'is_recurrence_exception' => false,
+			'event_hash' => 'asd123',
+			'alarm_hash' => 'asd567',
+			'type' => 'EMAIL',
+			'is_relative' => true,
+			'notification_date' => 123456,
+			'is_repeat_based' => false,
+			'calendardata' => 'Calendar data 123',
+			'displayname' => 'Displayname 123',
+			'principaluri' => 'principals/users/user001',
+		]);
+	}
 	public function testGetRemindersToProcess(): void {
 		$this->timeFactory->expects($this->exactly(1))
 			->method('getTime')
@@ -162,7 +191,7 @@ class BackendTest extends TestCase {
 			'is_recurring' => false,
 			'recurrence_id' => 123458,
 			'is_recurrence_exception' => false,
-			'event_hash' => 'asd123',
+			'event_hash' => 'asd456',
 			'alarm_hash' => 'asd567',
 			'type' => 'AUDIO',
 			'is_relative' => true,
