@@ -90,6 +90,8 @@ class Connection extends PrimaryReadReplicaConnection {
 	/** @var array<string, int> */
 	protected $tableDirtyWrites = [];
 
+	private ?array $transactionBacktrace = null;
+
 	/**
 	 * Initializes a new instance of the Connection class.
 	 *
@@ -310,7 +312,12 @@ class Connection extends PrimaryReadReplicaConnection {
 		$sql = $this->adapter->fixupStatement($sql);
 		$this->queriesExecuted++;
 		$this->logQueryToFile($sql);
-		return parent::executeQuery($sql, $params, $types, $qcp);
+		try {
+			return parent::executeQuery($sql, $params, $types, $qcp);
+		} catch (\Exception $e) {
+			$this->logDatabaseException($e);
+			throw $e;
+		}
 	}
 
 	/**
@@ -331,7 +338,12 @@ class Connection extends PrimaryReadReplicaConnection {
 		$sql = $this->adapter->fixupStatement($sql);
 		$this->queriesExecuted++;
 		$this->logQueryToFile($sql);
-		return parent::executeUpdate($sql, $params, $types);
+		try {
+			return parent::executeUpdate($sql, $params, $types);
+		} catch (\Exception $e) {
+			$this->logDatabaseException($e);
+			throw $e;
+		}
 	}
 
 	/**
@@ -357,7 +369,12 @@ class Connection extends PrimaryReadReplicaConnection {
 		$sql = $this->adapter->fixupStatement($sql);
 		$this->queriesExecuted++;
 		$this->logQueryToFile($sql);
-		return (int)parent::executeStatement($sql, $params, $types);
+		try {
+			return (int)parent::executeStatement($sql, $params, $types);
+		} catch (\Exception $e) {
+			$this->logDatabaseException($e);
+			throw $e;
+		}
 	}
 
 	protected function logQueryToFile(string $sql): void {
@@ -424,11 +441,21 @@ class Connection extends PrimaryReadReplicaConnection {
 	 * @deprecated 15.0.0 - use unique index and "try { $db->insert() } catch (UniqueConstraintViolationException $e) {}" instead, because it is more reliable and does not have the risk for deadlocks - see https://github.com/nextcloud/server/pull/12371
 	 */
 	public function insertIfNotExist($table, $input, ?array $compare = null) {
-		return $this->adapter->insertIfNotExist($table, $input, $compare);
+		try {
+			return $this->adapter->insertIfNotExist($table, $input, $compare);
+		} catch (\Exception $e) {
+			$this->logDatabaseException($e);
+			throw $e;
+		}
 	}
 
 	public function insertIgnoreConflict(string $table, array $values) : int {
-		return $this->adapter->insertIgnoreConflict($table, $values);
+		try {
+			return $this->adapter->insertIgnoreConflict($table, $values);
+		} catch (\Exception $e) {
+			$this->logDatabaseException($e);
+			throw $e;
+		}
 	}
 
 	private function getType($value) {
@@ -677,6 +704,7 @@ class Connection extends PrimaryReadReplicaConnection {
 
 	public function beginTransaction() {
 		if (!$this->inTransaction()) {
+			$this->transactionBacktrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
 			$this->transactionActiveSince = microtime(true);
 		}
 		return parent::beginTransaction();
@@ -686,6 +714,7 @@ class Connection extends PrimaryReadReplicaConnection {
 		$result = parent::commit();
 		if ($this->getTransactionNestingLevel() === 0) {
 			$timeTook = microtime(true) - $this->transactionActiveSince;
+			$this->transactionBacktrace = null;
 			$this->transactionActiveSince = null;
 			if ($timeTook > 1) {
 				$this->logger->warning('Transaction took ' . $timeTook . 's', ['exception' => new \Exception('Transaction took ' . $timeTook . 's')]);
@@ -698,6 +727,7 @@ class Connection extends PrimaryReadReplicaConnection {
 		$result = parent::rollBack();
 		if ($this->getTransactionNestingLevel() === 0) {
 			$timeTook = microtime(true) - $this->transactionActiveSince;
+			$this->transactionBacktrace = null;
 			$this->transactionActiveSince = null;
 			if ($timeTook > 1) {
 				$this->logger->warning('Transaction rollback took longer than 1s: ' . $timeTook, ['exception' => new \Exception('Long running transaction rollback')]);
@@ -726,5 +756,13 @@ class Connection extends PrimaryReadReplicaConnection {
 
 	private function getConnectionName(): string {
 		return $this->isConnectedToPrimary() ? 'primary' : 'replica';
+	}
+
+	public function logDatabaseException(\Exception $exception): void {
+		if ($exception instanceof Exception\UniqueConstraintViolationException) {
+			$this->logger->info($exception->getMessage(), ['exception' => $exception, 'transaction' => $this->transactionBacktrace]);
+		} else {
+			$this->logger->error($exception->getMessage(), ['exception' => $exception, 'transaction' => $this->transactionBacktrace]);
+		}
 	}
 }
