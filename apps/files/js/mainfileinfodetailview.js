@@ -163,7 +163,7 @@
 					timestamp: this.model.get('mtime'),
 					date: OC.Util.relativeModifiedDate(this.model.get('mtime')),
 					hasFavoriteAction: hasFavoriteAction,
-					starAltText: isFavorite ? t('files', 'Favorited') : t('files', 'Favorite'),
+					starAltText: isFavorite ? t('files', 'Favoured') : t('files', 'Favorite'),
 					starClass: isFavorite ? 'icon-starred' : 'icon-star',
 					permalink: this._makePermalink(this.model.get('id')),
 					permalinkTitle: t('files', 'Copy direct link (only works for people who have access to this file/folder)')
