@@ -46,11 +46,23 @@ class ConfigLexiconEntry implements IConfigLexiconEntry {
 	public function __construct(
 		private readonly string $key,
 		private readonly ConfigLexiconValueType $type,
+		null|string|int|float|bool|array $default = null,
 		string $definition = '',
 		private readonly bool $lazy = false,
 		private readonly bool $sensitive = false,
 		private readonly bool $deprecated = false
 	) {
+		if ($default !== null) {
+			/** @psalm-suppress InvalidArgument */
+			$this->default = match ($type) {
+				ConfigLexiconValueType::STRING => $this->convertFromString($default),
+				ConfigLexiconValueType::INT => $this->convertFromInt($default),
+				ConfigLexiconValueType::FLOAT => $this->convertFromFloat($default),
+				ConfigLexiconValueType::BOOL => $this->convertFromBool($default),
+				ConfigLexiconValueType::ARRAY => $this->convertFromArray($default)
+			};
+		}
+
 		/** @psalm-suppress UndefinedClass */
 		if (\OC::$CLI) { // only store definition if ran from CLI
 			$this->definition = $definition;
@@ -79,68 +91,48 @@ class ConfigLexiconEntry implements IConfigLexiconEntry {
 	}
 
 	/**
-	 * @inheritDoc
-	 *
 	 * @param string $default
-	 *
-	 * @return self
+	 * @return string
 	 * @since 30.0.0
 	 */
-	public function withDefaultString(string $default): self {
-		$this->default = $default;
-		return $this;
+	private function convertFromString(string $default): string {
+		return $default;
 	}
 
 	/**
-	 * @inheritDoc
-	 *
 	 * @param int $default
-	 *
-	 * @return self
+	 * @return string
 	 * @since 30.0.0
 	 */
-	public function withDefaultInt(int $default): self {
-		$this->default = (string) $default;
-		return $this;
+	private function convertFromInt(int $default): string {
+		return (string) $default;
 	}
 
 	/**
-	 * @inheritDoc
-	 *
 	 * @param float $default
-	 *
-	 * @return self
+	 * @return string
 	 * @since 30.0.0
 	 */
-	public function withDefaultFloat(float $default): self {
-		$this->default = (string) $default;
-		return $this;
+	private function convertFromFloat(float $default): string {
+		return (string) $default;
 	}
 
 	/**
-	 * @inheritDoc
-	 *
 	 * @param bool $default
-	 *
-	 * @return self
+	 * @return string
 	 * @since 30.0.0
 	 */
-	public function withDefaultBool(bool $default): self {
-		$this->default = ($default) ? '1' : '0';
-		return $this;
+	private function convertFromBool(bool $default): string {
+		return ($default) ? '1' : '0';
 	}
 
 	/**
-	 * @inheritDoc
-	 *
 	 * @param array $default
-	 *
-	 * @return self
+	 * @return string
 	 * @since 30.0.0
 	 */
-	public function withDefaultArray(array $default): self {
-		$this->default = json_encode($default);
-		return $this;
+	private function convertFromArray(array $default): string {
+		return json_encode($default);
 	}
 
 	/**

@@ -250,6 +250,7 @@ class ComposerStaticInit749170dad3f5e7f9ca158f5a9f04f6a2
         'OCP\\Comments\\NotFoundException' => __DIR__ . '/../../..' . '/lib/public/Comments/NotFoundException.php',
         'OCP\\Common\\Exception\\NotFoundException' => __DIR__ . '/../../..' . '/lib/public/Common/Exception/NotFoundException.php',
         'OCP\\ConfigLexicon\\ConfigLexiconEntry' => __DIR__ . '/../../..' . '/lib/public/ConfigLexicon/ConfigLexiconEntry.php',
+        'OCP\\ConfigLexicon\\ConfigLexiconValueType' => __DIR__ . '/../../..' . '/lib/public/ConfigLexicon/ConfigLexiconValueType.php',
         'OCP\\ConfigLexicon\\IConfigLexicon' => __DIR__ . '/../../..' . '/lib/public/ConfigLexicon/IConfigLexicon.php',
         'OCP\\ConfigLexicon\\IConfigLexiconEntry' => __DIR__ . '/../../..' . '/lib/public/ConfigLexicon/IConfigLexiconEntry.php',
         'OCP\\Config\\BeforePreferenceDeletedEvent' => __DIR__ . '/../../..' . '/lib/public/Config/BeforePreferenceDeletedEvent.php',

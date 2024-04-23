@@ -26,19 +26,6 @@ namespace OCP\ConfigLexicon;
 
 use OCP\IAppConfig;
 
-enum ConfigLexiconValueType {
-	/** @since 30.0.0 */
-	case STRING;
-	/** @since 30.0.0 */
-	case INT;
-	/** @since 30.0.0 */
-	case FLOAT;
-	/** @since 30.0.0 */
-	case BOOL;
-	/** @since 30.0.0 */
-	case ARRAY;
-}
-
 /**
  * Model that represent config values within an app config lexicon.
  *
@@ -46,7 +33,6 @@ enum ConfigLexiconValueType {
  * @since 30.0.0
  */
 interface IConfigLexiconEntry {
-
 	/**
 	 * returns the config key.
 	 *
@@ -65,56 +51,6 @@ interface IConfigLexiconEntry {
 	public function getValueType(): ConfigLexiconValueType;
 
 	/**
-	 * set default value (as string) for config value.
-	 *
-	 * @param string $default
-	 *
-	 * @return self
-	 * @since 30.0.0
-	 */
-	public function withDefaultString(string $default): self;
-
-	/**
-	 * set default value (as int) for config value.
-	 *
-	 * @param int $default
-	 *
-	 * @return self
-	 * @since 30.0.0
-	 */
-	public function withDefaultInt(int $default): self;
-
-	/**
-	 * set default value (as float) for config value.
-	 *
-	 * @param float $default
-	 *
-	 * @return self
-	 * @since 30.0.0
-	 */
-	public function withDefaultFloat(float $default): self;
-
-	/**
-	 * set default value (as bool) for config value.
-	 *
-	 * @param bool $default
-	 *
-	 * @return self
-	 * @since 30.0.0
-	 */
-	public function withDefaultBool(bool $default): self;
-
-	/**
-	 * set default value (as array) for config value.
-	 *
-	 * @param array $default
-	 *
-	 * @return self
-	 * @since 30.0.0
-	 */
-	public function withDefaultArray(array $default): self;
-
-	/**
 	 * returns the default value set for this config key.
 	 * default value is returned as string or NULL if not set.
 	 *
@@ -122,7 +58,6 @@ interface IConfigLexiconEntry {
 	 * @since 30.0.0
 	 */
 	public function getDefault(): ?string;
-
 
 	/**
 	 * returns the description for config key, only available when process is initiated from occ.
