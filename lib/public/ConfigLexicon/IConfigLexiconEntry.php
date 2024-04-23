@@ -26,6 +26,19 @@ namespace OCP\ConfigLexicon;
 
 use OCP\IAppConfig;
 
+enum ConfigLexiconValueType {
+	/** @since 30.0.0 */
+	case STRING;
+	/** @since 30.0.0 */
+	case INT;
+	/** @since 30.0.0 */
+	case FLOAT;
+	/** @since 30.0.0 */
+	case BOOL;
+	/** @since 30.0.0 */
+	case ARRAY;
+}
+
 /**
  * Model that represent config values within an app config lexicon.
  *
@@ -33,16 +46,6 @@ use OCP\IAppConfig;
  * @since 30.0.0
  */
 interface IConfigLexiconEntry {
-	/** @since 30.0.0 */
-	public const TYPE_STRING = 1;
-	/** @since 30.0.0 */
-	public const TYPE_INT = 2;
-	/** @since 30.0.0 */
-	public const TYPE_FLOAT = 3;
-	/** @since 30.0.0 */
-	public const TYPE_BOOL = 4;
-	/** @since 30.0.0 */
-	public const TYPE_ARRAY = 5;
 
 	/**
 	 * returns the config key.
@@ -55,11 +58,11 @@ interface IConfigLexiconEntry {
 	/**
 	 * returns the type of the config value.
 	 *
-	 * @return int
+	 * @return ConfigLexiconValueType
 	 * @see self::TYPE_STRING and others
 	 * @since 30.0.0
 	 */
-	public function getValueType(): int;
+	public function getValueType(): ConfigLexiconValueType;
 
 	/**
 	 * set default value (as string) for config value.

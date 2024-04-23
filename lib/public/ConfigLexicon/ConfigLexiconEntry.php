@@ -36,7 +36,7 @@ class ConfigLexiconEntry implements IConfigLexiconEntry {
 
 	/**
 	 * @param string $key config key
-	 * @param int $valueType type of config value ({@see self::TYPE_STRING} and others)
+	 * @param ConfigLexiconValueType $type type of config value
 	 * @param string $definition optional description of config key available when using occ command
 	 * @param bool $lazy set config value as lazy
 	 * @param bool $sensitive set config value as sensitive
@@ -45,7 +45,7 @@ class ConfigLexiconEntry implements IConfigLexiconEntry {
 	 */
 	public function __construct(
 		private readonly string $key,
-		private readonly int $valueType,
+		private readonly ConfigLexiconValueType $type,
 		string $definition = '',
 		private readonly bool $lazy = false,
 		private readonly bool $sensitive = false,
@@ -70,12 +70,12 @@ class ConfigLexiconEntry implements IConfigLexiconEntry {
 	/**
 	 * @inheritDoc
 	 *
-	 * @return int
+	 * @return ConfigLexiconValueType
 	 * @see self::TYPE_STRING and others
 	 * @since 30.0.0
 	 */
-	public function getValueType(): int {
-		return $this->valueType;
+	public function getValueType(): ConfigLexiconValueType {
+		return $this->type;
 	}
 
 	/**

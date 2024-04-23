@@ -40,6 +40,7 @@ use InvalidArgumentException;
 use JsonException;
 use OC\AppFramework\Bootstrap\Coordinator;
 use OCP\ConfigLexicon\ConfigLexiconEntry;
+use OCP\ConfigLexicon\ConfigLexiconValueType;
 use OCP\ConfigLexicon\IConfigLexiconEntry;
 use OCP\DB\Exception as DBException;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -1601,11 +1602,11 @@ class AppConfig implements IAppConfig {
 		$type &= ~self::VALUE_SENSITIVE;
 
 		if ($configValue->getValueType() !== match($type) {
-			self::VALUE_STRING => IConfigLexiconEntry::TYPE_STRING,
-			self::VALUE_INT => IConfigLexiconEntry::TYPE_INT,
-			self::VALUE_FLOAT => IConfigLexiconEntry::TYPE_FLOAT,
-			self::VALUE_BOOL => IConfigLexiconEntry::TYPE_BOOL,
-			self::VALUE_ARRAY => IConfigLexiconEntry::TYPE_ARRAY,
+			self::VALUE_STRING => ConfigLexiconValueType::STRING,
+			self::VALUE_INT => ConfigLexiconValueType::INT,
+			self::VALUE_FLOAT => ConfigLexiconValueType::FLOAT,
+			self::VALUE_BOOL => ConfigLexiconValueType::BOOL,
+			self::VALUE_ARRAY => ConfigLexiconValueType::ARRAY,
 		}) {
 			throw new AppConfigTypeConflictException('The key ' . $app . '/' . $key . ' is typed incorrectly in relation to the config lexicon');
 		}
