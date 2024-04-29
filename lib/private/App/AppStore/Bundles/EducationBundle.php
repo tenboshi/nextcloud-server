@@ -28,7 +28,7 @@ class EducationBundle extends Bundle {
 	 * {@inheritDoc}
 	 */
 	public function getName() {
-		return $this->l10n->t('Education Edition');
+		return $this->l10n->t('Education bundle');
 	}
 
 	/**
