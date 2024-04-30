@@ -28,6 +28,10 @@ use Psr\Log\LoggerInterface;
 class Util {
 	private static ?IManager $shareManager = null;
 
+	/** @var string[] */
+	private static array $invalidChars = [];
+	/** @var string[] */
+	private static array $invalidFilenames = [];
 	private static array $scriptsInit = [];
 	private static array $scripts = [];
 	private static array $scriptDeps = [];
@@ -494,14 +498,17 @@ class Util {
 	 * @since 30.0.0
 	 */
 	public static function getForbiddenFilenames(): array {
-		$config = \OCP\Server::get(IConfig::class);
-		$invalidFilenames = $config->getSystemValue('blacklisted_files', ['.htaccess']);
-		if (!is_array($invalidFilenames)) {
-			\OCP\Server::get(LoggerInterface::class)->error('Invalid system config value for "blacklisted_files" is ignored.');
-			$invalidFilenames = [];
-		}
-		return array_map('mb_strtolower', $invalidFilenames);
+		if (empty(self::$invalidFilenames)) {
+			$config = \OCP\Server::get(IConfig::class);
 
+			$invalidFilenames = $config->getSystemValue('blacklisted_files', ['.htaccess']);
+			if (!is_array($invalidFilenames)) {
+				\OCP\Server::get(LoggerInterface::class)->error('Invalid system config value for "blacklisted_files" is ignored.');
+				$invalidFilenames = ['.htaccess'];
+			}
+			self::$invalidFilenames = array_map('mb_strtolower', $invalidFilenames);
+		}
+		return self::$invalidFilenames;
 	}
 
 	/**
@@ -514,19 +521,25 @@ class Util {
 	 * @since 29.0.0
 	 */
 	public static function getForbiddenFileNameChars(): array {
-		// Get always forbidden characters
-		$invalidChars = str_split(\OCP\Constants::FILENAME_INVALID_CHARS);
-		if ($invalidChars === false) {
-			$invalidChars = [];
+		if (empty(self::$invalidChars)) {
+			$config = \OCP\Server::get(IConfig::class);
+
+			// Get always forbidden characters
+			$invalidChars = str_split(\OCP\Constants::FILENAME_INVALID_CHARS);
+			if ($invalidChars === false) {
+				$invalidChars = [];
+			}
+
+			// Get admin defined invalid characters
+			$additionalChars = $config->getSystemValue('forbidden_chars', []);
+			if (!is_array($additionalChars)) {
+				\OCP\Server::get(LoggerInterface::class)->error('Invalid system config value for "forbidden_chars" is ignored.');
+				$additionalChars = [];
+			}
+			self::$invalidChars = array_merge($invalidChars, $additionalChars);
 		}
 
-		// Get admin defined invalid characters
-		$additionalChars = \OCP\Server::get(IConfig::class)->getSystemValue('forbidden_chars', []);
-		if (!is_array($additionalChars)) {
-			\OCP\Server::get(LoggerInterface::class)->error('Invalid system config value for "forbidden_chars" is ignored.');
-			$additionalChars = [];
-		}
-		return array_merge($invalidChars, $additionalChars);
+		return self::$invalidChars;
 	}
 
 	/**
