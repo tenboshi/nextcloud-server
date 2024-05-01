@@ -429,23 +429,56 @@ class Filesystem {
 	 * @param string $filename
 	 * @return bool
 	 */
-	public static function isFileBlacklisted($filename) {
+	public static function hasFilenameInvalidCharacters(string $filename): bool {
+		$invalidChars = \OCP\Util::getForbiddenFileNameChars();
+		foreach ($invalidChars as $char) {
+			if (str_contains($filename, $char)) {
+				return true;
+			}
+		}
+
+		$sanitizedFileName = filter_var($filename, FILTER_UNSAFE_RAW, FILTER_FLAG_STRIP_LOW);
+		if ($sanitizedFileName !== $filename) {
+			return true;
+		}
+		return false;
+	}
+
+	public static function hasFilenameInvalidExtension(string $filename): bool {
+		$filename = mb_strtolower($filename);
+		// Check for forbidden filename exten<sions
+		$forbiddenExtensions = \OCP\Util::getForbiddenFilenameExtensions();
+		foreach ($forbiddenExtensions as $extension) {
+			if (str_ends_with($filename, $extension)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * @param string $filename
+	 * @return bool True if invalid name, False otherwise
+	 */
+	public static function isFileBlacklisted(string $filename): bool {
 		$filename = self::normalizePath($filename);
 		$filename = basename($filename);
+		$filename = mb_strtolower($filename);
 
 		if ($filename === '') {
 			return false;
 		}
 
-		$forbiddenChars = \OCP\Util::getForbiddenFileNameChars();
-		foreach($forbiddenChars as $char) {
-			if (str_contains($filename, $char)) {
-				return false;
-			}
+		// Check for forbidden filenames
+		$forbiddenNames = \OCP\Util::getForbiddenFilenames();
+		// The name part without extension
+		$basename = substr($filename, 0, strpos($filename, '.', 1) ?: null);
+		if (in_array($basename, $forbiddenNames)) {
+			return true;
 		}
 
-		$forbiddenNames = \OCP\Util::getForbiddenFilenames();
-		return in_array($filename, $forbiddenNames);
+		// Filename is not forbidden
+		return false;
 	}
 
 	/**

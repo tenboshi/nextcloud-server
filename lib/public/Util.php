@@ -537,7 +537,7 @@ class Util {
 	}
 
 	/**
-	 * Get a list of characters forbidden in file names
+	 * Get a list of characters forbidden in filenames
 	 *
 	 * Note: Characters in the range [0-31] are always forbidden,
 	 * even if not inside this list (see OCP\Files\Storage\IStorage::verifyPath).
@@ -545,7 +545,7 @@ class Util {
 	 * @return string[]
 	 * @since 29.0.0
 	 */
-	public static function getForbiddenFileNameChars(): array {
+	public static function getForbiddenFilenameChars(): array {
 		if (empty(self::$invalidChars)) {
 			$config = \OCP\Server::get(IConfig::class);
 
@@ -568,9 +568,9 @@ class Util {
 	}
 
 	/**
-	 * Returns whether the given file name is valid
-	 * @param string $file file name to check
-	 * @return bool true if the file name is valid, false otherwise
+	 * Returns whether the given filename is valid
+	 * @param string $file filename to check
+	 * @return bool true if the filename is valid, false otherwise
 	 * @deprecated 8.1.0 use OCP\Files\Storage\IStorage::verifyPath()
 	 * @since 7.0.0
 	 * @suppress PhanDeprecatedFunction
@@ -581,7 +581,19 @@ class Util {
 			return false;
 		}
 
-		return \OC\Files\Filesystem::isFileBlacklisted($file);
+		if (\OC\Files\Filesystem::isFileBlacklisted($file)) {
+			return false;
+		}
+
+		if (\OC\Files\Filesystem::hasFilenameInvalidExtension($file)) {
+			return false;
+		}
+
+		if (\OC\Files\Filesystem::hasFilenameInvalidCharacters($file)) {
+			return false;
+		}
+
+		return true;
 	}
 
 	/**

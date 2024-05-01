@@ -322,6 +322,7 @@ class UtilTest extends \Test\TestCase {
 
 			// htaccess files not allowed
 			['.htaccess', false],
+			['.HTAccess', false],
 
 			// part in the middle is ok
 			['super movie part one.mkv', true],

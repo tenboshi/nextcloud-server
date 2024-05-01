@@ -20,6 +20,7 @@ use PHPUnit\Framework\MockObject\MockObject;
  * @group DB
  *
  * @package Test\Files\Storage
+ * @backupStaticAttributes enabled
  */
 class CommonTest extends Storage {
 	/**
