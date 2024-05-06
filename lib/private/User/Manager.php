@@ -306,12 +306,12 @@ class Manager extends PublicEmitter implements IUserManager {
 				break;
 			case 'last_login ASC':
 				uasort($users, function (IUser $a, IUser $b) {
-					return strcasecmp($a->getLastLogin(), $b->getLastLogin());
+					return $a->getLastLogin() - $b->getLastLogin();
 				});
 				break;
 			case 'last_login DESC':
 				uasort($users, function (IUser $a, IUser $b) {
-					return strcasecmp($b->getLastLogin(), $a->getLastLogin());
+					return $b->getLastLogin() - $a->getLastLogin();
 				});
 				break;
 			case 'displayName ASC':
@@ -342,7 +342,7 @@ class Manager extends PublicEmitter implements IUserManager {
 	 * @param int $offset
 	 * @return IUser[]
 	 */
-	public function searchDisplayName($pattern, $limit = null, $offset = null, $orderBy = 'displayName', $sort= 'ASC') {
+	public function searchDisplayName($pattern, $limit = null, $offset = null, $orderBy = 'displayName', $sort = 'ASC') {
 		$users = [];
 		foreach ($this->backends as $backend) {
 			$backendUsers = $backend->getDisplayNames($pattern, $limit, $offset);
@@ -366,12 +366,12 @@ class Manager extends PublicEmitter implements IUserManager {
 				break;
 			case 'last_login ASC':
 				uasort($users, function (IUser $a, IUser $b) {
-					return strcasecmp($a->getLastLogin(), $b->getLastLogin());
+					return $a->getLastLogin() - $b->getLastLogin();
 				});
 				break;
 			case 'last_login DESC':
 				uasort($users, function (IUser $a, IUser $b) {
-					return strcasecmp($b->getLastLogin(), $a->getLastLogin());
+					return $b->getLastLogin() - $a->getLastLogin();
 				});
 				break;
 			case 'displayName DESC':
