@@ -67,6 +67,7 @@ class SystemConfig {
 		'github.client_secret' => true,
 		'log.condition' => [
 			'shared_secret' => true,
+			'matches' => true,
 		],
 		'license-key' => true,
 		'redis' => [
