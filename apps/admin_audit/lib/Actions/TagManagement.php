@@ -3,10 +3,9 @@
 declare(strict_types=1);
 
 /**
- * @copyright Copyright (c) 2017 Joas Schilling <coding@schilljs.com>
+ * @copyright Copyright (c) 2024 <gretadoci@gmail.com>
  *
- * @author Joas Schilling <coding@schilljs.com>
- * @author Roeland Jago Douma <roeland@famdouma.nl>
+ * @author 2024 <gretadoci@gmail.com>
  *
  * @license GNU AGPL version 3 or any later version
  *
