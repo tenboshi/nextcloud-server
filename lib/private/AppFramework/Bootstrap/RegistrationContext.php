@@ -27,6 +27,7 @@ use OCP\EventDispatcher\IEventDispatcher;
 use OCP\Files\Template\ICustomTemplateProvider;
 use OCP\Http\WellKnown\IHandler;
 use OCP\Notification\INotifier;
+use OCP\Mail\Provider\IProvider as IMailProvider;
 use OCP\Profile\ILinkAction;
 use OCP\Search\IProvider;
 use OCP\Settings\IDeclarativeSettingsForm;
@@ -148,6 +149,9 @@ class RegistrationContext {
 
 	/** @var ServiceRegistration<\OCP\TaskProcessing\ITaskType>[] */
 	private array $taskProcessingTaskTypes = [];
+	
+	/** @var ServiceRegistration<IMailProvider>[] */
+	private $mailProviders = [];
 
 	public function __construct(LoggerInterface $logger) {
 		$this->logger = $logger;
@@ -411,6 +415,13 @@ class RegistrationContext {
 					$taskProcessingTaskTypeClass
 				);
 			}
+
+			public function registerMailProvider(string $mailProviderClass): void {
+				$this->context->registerMailProvider(
+					$this->appId,
+					$mailProviderClass
+				);
+			}
 		};
 	}
 
@@ -602,6 +613,12 @@ class RegistrationContext {
 	 */
 	public function registerTaskProcessingTaskType(string $appId, string $taskProcessingTaskTypeClass) {
 		$this->taskProcessingTaskTypes[] = new ServiceRegistration($appId, $taskProcessingTaskTypeClass);
+	}
+	/**
+	 * @psalm-param class-string<IMailProvider> $migratorClass
+	 */
+	public function registerMailProvider(string $appId, string $class): void {
+		$this->mailProviders[] = new ServiceRegistration($appId, $class);
 	}
 
 	/**
@@ -947,5 +964,12 @@ class RegistrationContext {
 	 */
 	public function getTaskProcessingTaskTypes(): array {
 		return $this->taskProcessingTaskTypes;
+	}
+
+	/**
+	 * @return ServiceRegistration<IMailProviders>[]
+	 */
+	public function getMailProviders(): array {
+		return $this->mailProviders;
 	}
 }
