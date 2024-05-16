@@ -42,6 +42,7 @@ use OCA\AdminAudit\Actions\Files;
 use OCA\AdminAudit\Actions\GroupManagement;
 use OCA\AdminAudit\Actions\Security;
 use OCA\AdminAudit\Actions\Sharing;
+use OCA\AdminAudit\Actions\TagManagement;
 use OCA\AdminAudit\Actions\Trashbin;
 use OCA\AdminAudit\Actions\UserManagement;
 use OCA\AdminAudit\Actions\Versions;
@@ -198,8 +199,8 @@ class Application extends App implements IBootstrap {
 	private function tagHooks(IAuditLogger $logger,
 								  IEventDispatcher $eventDispatcher): void {
 		$eventDispatcher->addListener(\OCP\SystemTag\ManagerEvent::EVENT_CREATE, function (\OCP\SystemTag\ManagerEvent $event) use ($logger) {
-			$appActions = new Console($logger);
-			$appActions->runCommand([$event->getTag()->getName()]);
+			$appActions = new TagManagement($logger);
+			$appActions->createTag($event->getTag()->getName());
 		});
 	}
 
