@@ -30,7 +30,7 @@ class TagManagement extends Action {
 	 * @param string $appName
 	 */
 	public function createTag(string $appName): void {
-		$this->log('Tag "%s" created by',
+		$this->log('System tag "%s" created',
 			['app' => $appName],
 			['app']
 		);
