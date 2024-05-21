@@ -161,7 +161,7 @@ class RegistrationContext {
 	/** @var ServiceRegistration<IDeclarativeSettingsForm>[] */
 	private array $declarativeSettings = [];
 
-	/** @var array<array-key, string> */
+	/** @var array<string,class-string<IConfigLexicon>> Config lexicon classes indexed by appid */
 	private array $configLexiconClasses = [];
 
 	/** @var ServiceRegistration<ITeamResourceProvider>[] */
@@ -942,10 +942,6 @@ class RegistrationContext {
 	/**
 	 * returns IConfigLexicon registered by the app.
 	 * null if none registered.
-	 *
-	 * @param string $appId
-	 *
-	 * @return IConfigLexicon|null
 	 */
 	public function getConfigLexicon(string $appId): ?IConfigLexicon {
 		if (!array_key_exists($appId, $this->configLexiconClasses)) {
