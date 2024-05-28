@@ -91,7 +91,7 @@ class EventReader {
 			// evaluate if input is a calendar vobject
 		} elseif ($input instanceof VCalendar) {
 			// Calendar + UID mode.
-			if (!$uid) {
+			if (!isset($uid)) {
 				throw new InvalidArgumentException('The UID argument is required when a VCALENDAR object is used');
 			}
 			// extract events from calendar
@@ -120,7 +120,7 @@ class EventReader {
 		// In this particular case, we're just going to grab the first
 		// event and use that instead. This may not always give the
 		// desired result.
-		if (!$this->baseEvent && count($events) > 0) {
+		if (!isset($this->baseEvent) && count($events) > 0) {
 			$this->baseEvent = array_shift($events);
 		}
 
@@ -128,13 +128,18 @@ class EventReader {
 		// we require this to align all other dates times
 		// evaluate if timezone paramater was used (treat this as a override)
 		if (!is_null($timeZone)) {
-			$this->baseEventStartTimeZone = $timezone;
-			// evaluate if start date has a timezone parameter
-		} elseif (isset($this->baseEvent->DTSTART->parameters['TZID'])) {
+			$this->baseEventStartTimeZone = $timeZone;
+		}
+		// evaluate if event start date has a timezone parameter
+		elseif (isset($this->baseEvent->DTSTART->parameters['TZID'])) {
 			$this->baseEventStartTimeZone = new DateTimeZone($this->baseEvent->DTSTART->parameters['TZID']->getValue());
-		} elseif (isset($input->VTIMEZONE[0]) && isset($input->VTIMEZONE[0]->TZID)) {
+		}
+		// evaluate if event calendar wrapper has a time zone
+		elseif (isset($input->VTIMEZONE[0]) && isset($input->VTIMEZONE[0]->TZID)) {
 			$this->baseEventStartTimeZone = new DateTimeZone($input->VTIMEZONE[0]->TZID);
-		} else {
+		}
+		// otherwise, as a last resort use the UTC timezone
+		else {
 			$this->baseEventStartTimeZone = new DateTimeZone('UTC');
 		}
 
@@ -142,13 +147,18 @@ class EventReader {
 		// we require this to align all other dates and times
 		// evaluate if timezone paramater was used (treat this as a override)
 		if (!is_null($timeZone)) {
-			$this->baseEventEndTimeZone = $timezone;
-			// evaluate if end date has a timezone parameter
-		} elseif (isset($this->baseEvent->DTEND->parameters['TZID'])) {
+			$this->baseEventEndTimeZone = $timeZone;
+		}
+		// evaluate if event start date has a timezone parameter
+		elseif (isset($this->baseEvent->DTEND->parameters['TZID'])) {
 			$this->baseEventEndTimeZone = new DateTimeZone($this->baseEvent->DTEND->parameters['TZID']->getValue());
-		} elseif (isset($input->VTIMEZONE[1]) && isset($input->VTIMEZONE[1]->TZID)) {
+		}
+		// evaluate if event calendar wrapper has a time zone
+		elseif (isset($input->VTIMEZONE[1]) && isset($input->VTIMEZONE[1]->TZID)) {
 			$this->baseEventEndTimeZone = new DateTimeZone($input->VTIMEZONE[1]->TZID);
-		} else {
+		}
+		// otherwise, as a last resort use the UTC timezone
+		else {
 			$this->baseEventEndTimeZone = new DateTimeZone('UTC');
 		}
 

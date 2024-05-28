@@ -667,7 +667,7 @@ class IMipService {
 	public function addBulletList(IEMailTemplate $template, VEvent $vevent, $data) {
 		$template->addBodyListItem(
 			$data['meeting_title_html'] ?? $data['meeting_title'], $this->l10n->t('Title:'),
-				$this->getAbsoluteImagePath('caldav/title.png'), $data['meeting_title'], '', IMipPlugin::IMIP_INDENT);
+			$this->getAbsoluteImagePath('caldav/title.png'), $data['meeting_title'], '', IMipPlugin::IMIP_INDENT);
 		if ($data['meeting_when'] !== '') {
 			$template->addBodyListItem($data['meeting_when_html'] ?? $data['meeting_when'], $this->l10n->t('When:'),
 				$this->getAbsoluteImagePath('caldav/time.png'), $data['meeting_when'], '', IMipPlugin::IMIP_INDENT);
