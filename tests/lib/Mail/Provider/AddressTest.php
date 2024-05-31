@@ -23,25 +23,42 @@ declare(strict_types=1);
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-namespace OCP\Mail\Provider;
 
-/**
- * Mail Service Identity Interface
- *
- * This interface is a base requirement of methods and functionality used to construct a mail service identity.
- *
- * @since 30.0.0
- *
- */
-interface IServiceIdentity {
+namespace Test\Mail\Provider;
 
-	/**
-	 * An arbitrary unique text string identifying this credential type
-	 *
-	 * @since 30.0.0
-	 *
-	 * @return string
-	 */
-	public function type(): string;
+use OCP\Mail\Provider\Address;
+use Test\TestCase;
+
+class AddressTest extends TestCase {
+
+	/** @var Address*/
+	private $address;
+
+	protected function setUp(): void {
+		parent::setUp();
+
+		$this->address = new Address('user1@testing.com', 'User One');
+
+	}
+
+	public function testAddress(): void {
+		
+		// test set by constructor
+        $this->assertEquals('user1@testing.com', $this->address->getAddress());
+		// test set by setter
+		$this->address->setAddress('user2@testing.com');
+        $this->assertEquals('user2@testing.com', $this->address->getAddress());
+
+	}
+
+	public function testLabel(): void {
+		
+		// test set by constructor
+        $this->assertEquals('User One', $this->address->getLabel());
+		// test set by setter
+		$this->address->setLabel('User Two');
+        $this->assertEquals('User Two', $this->address->getLabel());
+
+	}
 
 }

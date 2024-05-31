@@ -15,7 +15,6 @@ use OCP\Defaults;
 use OCP\IConfig;
 use OCP\IUserSession;
 use OCP\Mail\IMailer;
-use OCP\Mail\Provider\Manager as MailManager;
 use OCP\Util;
 use Psr\Log\LoggerInterface;
 use Sabre\CalDAV\Schedule\IMipPlugin as SabreIMipPlugin;
