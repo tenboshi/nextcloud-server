@@ -32,6 +32,8 @@ class Util {
 	private static array $invalidChars = [];
 	/** @var string[] */
 	private static array $invalidFilenames = [];
+	/** @var string[] */
+	private static array $invalidFilenameExtensions = [];
 	private static array $scriptsInit = [];
 	private static array $scripts = [];
 	private static array $scriptDeps = [];
@@ -493,7 +495,30 @@ class Util {
 	}
 
 	/**
-	 * Get a list of reserved file names that must not be used
+	 * Get a list of forbidden filename extensions that must not be used
+	 * This list should be checked case-insensitive, all names are returned lowercase.
+	 * @return string[]
+	 * @since 30.0.0
+	 */
+	public static function getForbiddenFilenameExtensions(): array {
+		if (empty(self::$invalidFilenameExtensions)) {
+			$config = \OCP\Server::get(IConfig::class);
+
+			$invalidFilenameExtensions = $config->getSystemValue('forbidden_filename_extensions', ['.filepart']);
+			if (!is_array($invalidFilenameExtensions)) {
+				\OCP\Server::get(LoggerInterface::class)->error('Invalid system config value for "forbidden_filename_extensions" is ignored.');
+				$invalidFilenameExtensions = ['.filepart'];
+			}
+			// Always forbid .part files as they are used internally
+			$invalidFilenameExtensions = array_merge($invalidFilenameExtensions, ['.part']);
+			self::$invalidFilenameExtensions = array_map('mb_strtolower', $invalidFilenameExtensions);
+		}
+		return self::$invalidFilenameExtensions;
+	}
+
+	/**
+	 * Get a list of reserved filenames that must not be used
+	 * This list should be checked case-insensitive, all names are returned lowercase.
 	 * @return string[]
 	 * @since 30.0.0
 	 */

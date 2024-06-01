@@ -34,6 +34,7 @@ class UtilTest extends \Test\TestCase {
 		self::invokePrivate(\OCP\Util::class, 'scriptDeps', [[]]);
 		self::invokePrivate(\OCP\Util::class, 'invalidChars', [[]]);
 		self::invokePrivate(\OCP\Util::class, 'invalidFilenames', [[]]);
+		self::invokePrivate(\OCP\Util::class, 'invalidFilenameExtensions', [[]]);
 	}
 
 	public function testGetVersion() {
@@ -236,6 +237,40 @@ class UtilTest extends \Test\TestCase {
 		}
 	}
 
+	public function testGetForbiddenExtensions() {
+		$config = \OCP\Server::get(IConfig::class);
+		$backup = $config->getSystemValue('forbidden_filename_extensions', ['.filepart', '.part']);
+
+		try {
+			// Fake config
+			$config->setSystemValue('forbidden_filename_extensions', ['.txt']);
+			$this->assertEqualsCanonicalizing(
+				['.part', '.txt'],
+				\OCP\Util::getForbiddenFilenameExtensions(),
+			);
+		} finally {
+			// Reset config
+			$config->setSystemValue('forbidden_filename_extensions', $backup);
+		}
+	}
+
+	public function testGetForbiddenExtensionsInvalidConfig() {
+		$config = \OCP\Server::get(IConfig::class);
+		$backup = $config->getSystemValue('forbidden_filename_extensions', ['.filepart', '.part']);
+
+		try {
+			// Fake config
+			$config->setSystemValue('forbidden_filename_extensions', 'not an array');
+			$this->assertEqualsCanonicalizing(
+				['.filepart', '.part'],
+				\OCP\Util::getForbiddenFilenameExtensions(),
+			);
+		} finally {
+			// Reset config
+			$config->setSystemValue('forbidden_filename_extensions', $backup);
+		}
+	}
+
 	/**
 	 * @dataProvider filenameValidationProvider
 	 */
@@ -280,6 +315,10 @@ class UtilTest extends \Test\TestCase {
 			['.. ', false],
 			['. ', false],
 			[' .', false],
+
+			// part files not allowed
+			['notallowed.part', false],
+			['neither.filepart', false],
 
 			// htaccess files not allowed
 			['.htaccess', false],

@@ -1979,6 +1979,15 @@ $CONFIG = [
 'blacklisted_files' => ['.htaccess'],
 
 /**
+ * Deny extensions from being used for filenames.
+ * 
+ * The '.part' extension is always forbidden, as this is used internally by Nextcloud.
+ * 
+ * Defaults to ``array('.filepart', '.part')``
+ */
+'forbidden_filename_extensions' => ['.part', '.filepart'],
+
+/**
  * Deny characters from being used in filenames. This is useful if you
  * have a filesystem or OS which does not support certain characters like windows.
  *
