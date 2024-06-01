@@ -67,7 +67,7 @@ class Manager implements IManager {
 	public function has(): bool {
 
 		// return true if collection has any providers
-		return count($this->providers()) > 0;
+		return !empty($this->providers());
 
 	}
 
@@ -183,8 +183,12 @@ class Manager implements IManager {
 		$services = [];
 		// retrieve and iterate through mail providers
 		foreach ($this->providers() as $entry) {
-			// extract id and services from providers collection
-			$services[$entry->id()] = $entry->listServices($uid);
+			// retrieve collection of services
+			$mailServices = $entry->listServices($uid);
+			// evaluate if mail services collection is not empty and add results to services collection
+			if (!empty($mailServices)) {
+				$services[$entry->id()] = $mailServices;
+			}
 		}
 		// return collection
 		return $services;
@@ -208,16 +212,19 @@ class Manager implements IManager {
 		if ($pid !== null) {
 			// find provider
 			$provider = $this->findProviderById($pid);
-			// query provider for service with specific mail address
-			$service = $provider->findServiceById($uid, $sid);
-			// evaluate if mail service was found
-			if ($service instanceof IService) {
-				return $service;
+			// evaluate if provider was found
+			if ($provider instanceof IProvider) {
+				// find service with specific id
+				$service = $provider->findServiceById($uid, $sid);
+				// evaluate if mail service was found
+				if ($service instanceof IService) {
+					return $service;
+				}
 			}
 		} else {
 			// retrieve and iterate through mail providers
 			foreach ($this->providers() as $provider) {
-				// query provider for service with specific mail address
+				// find service with specific id
 				$service = $provider->findServiceById($uid, $sid);
 				// evaluate if mail service was found
 				if ($service instanceof IService) {
@@ -239,18 +246,34 @@ class Manager implements IManager {
 	 *
 	 * @param string $uid				user id
 	 * @param string $address			mail address (e.g. test@example.com)
+	 * @param string $pid				provider id
 	 *
 	 * @return IService|null			returns service object or null if non found
 	 */
-	public function findServiceByAddress(string $uid, string $address): IService | null {
+	public function findServiceByAddress(string $uid, string $address, ?string $pid = null): IService | null {
 		
-		// retrieve and iterate through mail providers
-		foreach ($this->providers() as $provider) {
-			// query provider for service with specific mail address
-			$service = $provider->findServiceByAddress($uid, $address);
-			// evaluate if mail service was found
-			if ($service instanceof IService) {
-				return $service;
+		// evaluate if provider id was specified
+		if ($pid !== null) {
+			// find provider
+			$provider = $this->findProviderById($pid);
+			// evaluate if provider was found
+			if ($provider instanceof IProvider) {
+				// find service with specific mail address
+				$service = $provider->findServiceByAddress($uid, $address);
+				// evaluate if mail service was found
+				if ($service instanceof IService) {
+					return $service;
+				}
+			}
+		} else {
+			// retrieve and iterate through mail providers
+			foreach ($this->providers() as $provider) {
+				// find service with specific mail address
+				$service = $provider->findServiceByAddress($uid, $address);
+				// evaluate if mail service was found
+				if ($service instanceof IService) {
+					return $service;
+				}
 			}
 		}
 		// return null if no match was found

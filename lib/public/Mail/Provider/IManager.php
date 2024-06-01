@@ -120,9 +120,10 @@ interface IManager {
 	 *
 	 * @param string $uid				user id
 	 * @param string $address			mail address (e.g. test@example.com)
+	 * @param string $pid				provider id
 	 *
-	 * @return IService					returns service object or null if non found
+	 * @return IService|null			returns service object or null if non found
 	 */
-	public function findServiceByAddress(string $uid, string $address): IService | null;
+	public function findServiceByAddress(string $uid, string $address, ?string $pid = null): IService | null;
 
 }
