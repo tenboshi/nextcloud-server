@@ -8,6 +8,7 @@
  */
 namespace OCA\DAV\CalDAV\Schedule;
 
+use OC\Mail\Provider\Manager as MailManager;
 use OCA\DAV\CalDAV\CalendarObject;
 use OCA\DAV\CalDAV\EventComparisonService;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -258,7 +259,7 @@ class IMipPlugin extends SabreIMipPlugin {
 
 		try {
 			// load mail provider manager
-			$mailManager = \OC::$server->get(\OC\Mail\Provider\Manager::class);
+			$mailManager = \OC::$server->get(MailManager::class);
 			// retrieve all services
 			$mailService = $mailManager->findServiceByAddress($this->userSession->getUser()->getUID(), $sender);
 			// evaluate if a mail service was found and has sending capabilities
