@@ -44,20 +44,20 @@ class AddressTest extends TestCase {
 	public function testAddress(): void {
 		
 		// test set by constructor
-        $this->assertEquals('user1@testing.com', $this->address->getAddress());
+		$this->assertEquals('user1@testing.com', $this->address->getAddress());
 		// test set by setter
 		$this->address->setAddress('user2@testing.com');
-        $this->assertEquals('user2@testing.com', $this->address->getAddress());
+		$this->assertEquals('user2@testing.com', $this->address->getAddress());
 
 	}
 
 	public function testLabel(): void {
 		
 		// test set by constructor
-        $this->assertEquals('User One', $this->address->getLabel());
+		$this->assertEquals('User One', $this->address->getLabel());
 		// test set by setter
 		$this->address->setLabel('User Two');
-        $this->assertEquals('User Two', $this->address->getLabel());
+		$this->assertEquals('User Two', $this->address->getLabel());
 
 	}
 

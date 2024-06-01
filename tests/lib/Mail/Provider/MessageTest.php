@@ -51,7 +51,7 @@ class MessageTest extends TestCase {
 			'cd02ea42-feac-4863-b9d8-484d16a587ea'
 		);
 		$this->address1 = new Address(
-			'user1@testing.com', 
+			'user1@testing.com',
 			'User One'
 		);
 		$this->address2 = new Address(
@@ -76,91 +76,91 @@ class MessageTest extends TestCase {
 	public function testId(): void {
 		
 		// test set by constructor
-        $this->assertEquals('cd02ea42-feac-4863-b9d8-484d16a587ea', $this->message->id());
+		$this->assertEquals('cd02ea42-feac-4863-b9d8-484d16a587ea', $this->message->id());
 
 	}
 
 	public function testFrom(): void {
 		
 		// test not set
-        $this->assertNull($this->message->getFrom());
+		$this->assertNull($this->message->getFrom());
 		// test set by setter
 		$this->message->setFrom($this->address1);
-        $this->assertEquals($this->address1, $this->message->getFrom());
+		$this->assertEquals($this->address1, $this->message->getFrom());
 
 	}
 
 	public function testReplyTo(): void {
 		
 		// test not set
-        $this->assertNull($this->message->getReplyTo());
+		$this->assertNull($this->message->getReplyTo());
 		// test set by setter
 		$this->message->setReplyTo($this->address1);
-        $this->assertEquals($this->address1, $this->message->getReplyTo());
+		$this->assertEquals($this->address1, $this->message->getReplyTo());
 
 	}
 
 	public function testTo(): void {
 		
 		// test not set
-        $this->assertNull($this->message->getTo());
+		$this->assertNull($this->message->getTo());
 		// test set by setter single
 		$this->message->setTo($this->address1);
-        $this->assertEquals([$this->address1], $this->message->getTo());
+		$this->assertEquals([$this->address1], $this->message->getTo());
 		// test set by setter multiple
 		$this->message->setTo($this->address1, $this->address2);
-        $this->assertEquals([$this->address1, $this->address1, $this->address2], $this->message->getTo());
+		$this->assertEquals([$this->address1, $this->address1, $this->address2], $this->message->getTo());
 
 	}
 
 	public function testCc(): void {
 		
 		// test not set
-        $this->assertNull($this->message->getCc());
+		$this->assertNull($this->message->getCc());
 		// test set by setter single
 		$this->message->setCc($this->address1);
-        $this->assertEquals([$this->address1], $this->message->getCc());
+		$this->assertEquals([$this->address1], $this->message->getCc());
 		// test set by setter multiple
 		$this->message->setCc($this->address1, $this->address2);
-        $this->assertEquals([$this->address1, $this->address1, $this->address2], $this->message->getCc());
+		$this->assertEquals([$this->address1, $this->address1, $this->address2], $this->message->getCc());
 
 	}
 
 	public function testBcc(): void {
 		
 		// test not set
-        $this->assertNull($this->message->getBcc());
+		$this->assertNull($this->message->getBcc());
 		// test set by setter single
 		$this->message->setBcc($this->address1);
-        $this->assertEquals([$this->address1], $this->message->getBcc());
+		$this->assertEquals([$this->address1], $this->message->getBcc());
 		// test set by setter multiple
 		$this->message->setBcc($this->address1, $this->address2);
-        $this->assertEquals([$this->address1, $this->address1, $this->address2], $this->message->getBcc());
+		$this->assertEquals([$this->address1, $this->address1, $this->address2], $this->message->getBcc());
 
 	}
 
 	public function testSubject(): void {
 		
 		// test not set
-        $this->assertNull($this->message->getSubject());
+		$this->assertNull($this->message->getSubject());
 		// test set by setter
 		$this->message->setSubject('Testing Mail Subject');
-        $this->assertEquals('Testing Mail Subject', $this->message->getSubject());
+		$this->assertEquals('Testing Mail Subject', $this->message->getSubject());
 
 	}
 
 	public function testBody(): void {
 		
 		// test not set
-        $this->assertNull($this->message->getBody());
+		$this->assertNull($this->message->getBody());
 		// test set by setter - text body
 		$this->message->setBody('Testing Text Body', false);
-        $this->assertEquals('Testing Text Body', $this->message->getBody());
+		$this->assertEquals('Testing Text Body', $this->message->getBody());
 		$this->message->setBodyPlain('Testing Text Body Again', false);
 		$this->assertEquals('Testing Text Body Again', $this->message->getBodyPlain());
 		// test set by setter - html body
 		$this->message->setBody('Testing HTML Body', true);
-        $this->assertEquals('Testing HTML Body', $this->message->getBody());
+		$this->assertEquals('Testing HTML Body', $this->message->getBody());
 		$this->message->setBodyHtml('Testing HTML Body Again', false);
 		$this->assertEquals('Testing HTML Body Again', $this->message->getBodyHtml());
 
@@ -169,13 +169,13 @@ class MessageTest extends TestCase {
 	public function testAttachments(): void {
 		
 		// test not set
-        $this->assertNull($this->message->getAttachments());
+		$this->assertNull($this->message->getAttachments());
 		// test set by setter single
 		$this->message->setAttachments($this->attachment1);
-        $this->assertEquals([$this->attachment1], $this->message->getAttachments());
+		$this->assertEquals([$this->attachment1], $this->message->getAttachments());
 		// test set by setter multiple
 		$this->message->setAttachments($this->attachment1, $this->attachment2);
-        $this->assertEquals([$this->attachment1, $this->attachment1, $this->attachment2], $this->message->getAttachments());
+		$this->assertEquals([$this->attachment1, $this->attachment1, $this->attachment2], $this->message->getAttachments());
 
 	}
 }

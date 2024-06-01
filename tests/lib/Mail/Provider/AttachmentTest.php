@@ -49,40 +49,40 @@ class AttachmentTest extends TestCase {
 	public function testName(): void {
 		
 		// test set by constructor
-        $this->assertEquals('example1.txt', $this->attachment->getName());
+		$this->assertEquals('example1.txt', $this->attachment->getName());
 		// test set by setter
 		$this->attachment->setName('example2.txt');
-        $this->assertEquals('example2.txt', $this->attachment->getName());
+		$this->assertEquals('example2.txt', $this->attachment->getName());
 
 	}
 
 	public function testType(): void {
 		
 		// test set by constructor
-        $this->assertEquals('text/plain', $this->attachment->getType());
+		$this->assertEquals('text/plain', $this->attachment->getType());
 		// test set by setter
 		$this->attachment->setType('text/html');
-        $this->assertEquals('text/html', $this->attachment->getType());
+		$this->assertEquals('text/html', $this->attachment->getType());
 
 	}
 
 	public function testContents(): void {
 		
 		// test set by constructor
-        $this->assertEquals('This is the contents of a file', $this->attachment->getContents());
+		$this->assertEquals('This is the contents of a file', $this->attachment->getContents());
 		// test set by setter
 		$this->attachment->setContents('This is the modified contents of a file');
-        $this->assertEquals('This is the modified contents of a file', $this->attachment->getContents());
+		$this->assertEquals('This is the modified contents of a file', $this->attachment->getContents());
 
 	}
 
 	public function testEmbedded(): void {
 		
 		// test set by constructor
-        $this->assertEquals(false, $this->attachment->getEmbedded());
+		$this->assertEquals(false, $this->attachment->getEmbedded());
 		// test set by setter
 		$this->attachment->setEmbedded(true);
-        $this->assertEquals(true, $this->attachment->getEmbedded());
+		$this->assertEquals(true, $this->attachment->getEmbedded());
 
 	}
 

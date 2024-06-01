@@ -113,7 +113,7 @@ class MailProviderTest extends TestCase {
 		$this->container
 		->method('get')
 		->willReturnMap([
-				['Mock\Provider\MailProvider', $this->provider]
+			['Mock\Provider\MailProvider', $this->provider]
 		]);
 
 	}
