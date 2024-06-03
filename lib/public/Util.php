@@ -28,11 +28,11 @@ use Psr\Log\LoggerInterface;
 class Util {
 	private static ?IManager $shareManager = null;
 
-	/** @var string[] */
+	/** @var list<string> */
 	private static array $invalidChars = [];
-	/** @var string[] */
+	/** @var list<string> */
 	private static array $invalidFilenames = [];
-	/** @var string[] */
+	/** @var list<string> */
 	private static array $invalidFilenameExtensions = [];
 	private static array $scriptsInit = [];
 	private static array $scripts = [];
@@ -497,7 +497,7 @@ class Util {
 	/**
 	 * Get a list of forbidden filename extensions that must not be used
 	 * This list should be checked case-insensitive, all names are returned lowercase.
-	 * @return string[]
+	 * @return list<string>
 	 * @since 30.0.0
 	 */
 	public static function getForbiddenFilenameExtensions(): array {
@@ -511,7 +511,9 @@ class Util {
 			}
 			// Always forbid .part files as they are used internally
 			$invalidFilenameExtensions = array_merge($invalidFilenameExtensions, ['.part']);
-			self::$invalidFilenameExtensions = array_map('mb_strtolower', $invalidFilenameExtensions);
+			// The list is case insensitive so we provide it always lowercase
+			$invalidFilenameExtensions = array_map('mb_strtolower', $invalidFilenameExtensions);
+			self::$invalidFilenameExtensions = array_values($invalidFilenameExtensions);
 		}
 		return self::$invalidFilenameExtensions;
 	}
@@ -519,7 +521,7 @@ class Util {
 	/**
 	 * Get a list of reserved filenames that must not be used
 	 * This list should be checked case-insensitive, all names are returned lowercase.
-	 * @return string[]
+	 * @return list<string>
 	 * @since 30.0.0
 	 */
 	public static function getForbiddenFilenames(): array {
@@ -531,7 +533,9 @@ class Util {
 				\OCP\Server::get(LoggerInterface::class)->error('Invalid system config value for "blacklisted_files" is ignored.');
 				$invalidFilenames = ['.htaccess'];
 			}
-			self::$invalidFilenames = array_map('mb_strtolower', $invalidFilenames);
+			// The list is case insensitive so we provide it always lowercase
+			$invalidFilenames = array_map('mb_strtolower', $invalidFilenames);
+			self::$invalidFilenames = array_values($invalidFilenames);
 		}
 		return self::$invalidFilenames;
 	}
@@ -542,7 +546,7 @@ class Util {
 	 * Note: Characters in the range [0-31] are always forbidden,
 	 * even if not inside this list (see OCP\Files\Storage\IStorage::verifyPath).
 	 *
-	 * @return string[]
+	 * @return list<string>
 	 * @since 29.0.0
 	 */
 	public static function getForbiddenFilenameChars(): array {
@@ -561,7 +565,8 @@ class Util {
 				\OCP\Server::get(LoggerInterface::class)->error('Invalid system config value for "forbidden_chars" is ignored.');
 				$additionalChars = [];
 			}
-			self::$invalidChars = array_merge($invalidChars, $additionalChars);
+			$invalidChars = array_merge($invalidChars, $additionalChars);
+			self::$invalidChars = array_values($invalidChars);
 		}
 
 		return self::$invalidChars;
