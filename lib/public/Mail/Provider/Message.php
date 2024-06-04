@@ -131,12 +131,8 @@ class Message implements \OCP\Mail\Provider\IMessage {
 	 * @return self                             return this object for command chaining
 	 */
 	public function setTo(IAddress ...$value): self {
-		// evaluate if data store field already exists and append values otherwise create field and store values
-		if (isset($this->data['to']) && is_array($this->data['to'])) {
-			$this->data['to'] = array_merge($this->data['to'], $value);
-		} else {
-			$this->data['to'] = $value;
-		}
+		// create or update field in data store with value
+		$this->data['to'] = $value;
 		// return this object for command chaining
 		return $this;
 	}
@@ -163,12 +159,8 @@ class Message implements \OCP\Mail\Provider\IMessage {
 	 * @return self                             return this object for command chaining
 	 */
 	public function setCc(IAddress ...$value): self {
-		// evaluate if data store field already exists and append values otherwise create field and store values
-		if (isset($this->data['cc']) && is_array($this->data['cc'])) {
-			$this->data['cc'] = array_merge($this->data['cc'], $value);
-		} else {
-			$this->data['cc'] = $value;
-		}
+		// create or update field in data store with value
+		$this->data['cc'] = $value;
 		// return this object for command chaining
 		return $this;
 	}
@@ -195,12 +187,8 @@ class Message implements \OCP\Mail\Provider\IMessage {
 	 * @return self                             return this object for command chaining
 	 */
 	public function setBcc(IAddress ...$value): self {
-		// evaluate if data store field already exists and append values otherwise create field and store values
-		if (isset($this->data['bcc']) && is_array($this->data['bcc'])) {
-			$this->data['bcc'] = array_merge($this->data['bcc'], $value);
-		} else {
-			$this->data['bcc'] = $value;
-		}
+		// create or update field in data store with value
+		$this->data['bcc'] = $value;
 		// return this object for command chaining
 		return $this;
 	}
@@ -352,12 +340,8 @@ class Message implements \OCP\Mail\Provider\IMessage {
 	 * @return self                                     return this object for command chaining
 	 */
 	public function setAttachments(IAttachment ...$value): self {
-		// evaluate if data store field already exists and append values otherwise create field and store values
-		if (isset($this->data['attachments']) && is_array($this->data['attachments'])) {
-			$this->data['attachments'] = array_merge($this->data['attachments'], $value);
-		} else {
-			$this->data['attachments'] = $value;
-		}
+		// create or update field in data store with value
+		$this->data['attachments'] = $value;
 		// return this object for command chaining
 		return $this;
 	}

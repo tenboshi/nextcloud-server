@@ -109,7 +109,7 @@ class MessageTest extends TestCase {
 		$this->assertEquals([$this->address1], $this->message->getTo());
 		// test set by setter multiple
 		$this->message->setTo($this->address1, $this->address2);
-		$this->assertEquals([$this->address1, $this->address1, $this->address2], $this->message->getTo());
+		$this->assertEquals([$this->address1, $this->address2], $this->message->getTo());
 
 	}
 
@@ -122,7 +122,7 @@ class MessageTest extends TestCase {
 		$this->assertEquals([$this->address1], $this->message->getCc());
 		// test set by setter multiple
 		$this->message->setCc($this->address1, $this->address2);
-		$this->assertEquals([$this->address1, $this->address1, $this->address2], $this->message->getCc());
+		$this->assertEquals([$this->address1, $this->address2], $this->message->getCc());
 
 	}
 
@@ -135,7 +135,7 @@ class MessageTest extends TestCase {
 		$this->assertEquals([$this->address1], $this->message->getBcc());
 		// test set by setter multiple
 		$this->message->setBcc($this->address1, $this->address2);
-		$this->assertEquals([$this->address1, $this->address1, $this->address2], $this->message->getBcc());
+		$this->assertEquals([$this->address1, $this->address2], $this->message->getBcc());
 
 	}
 
@@ -175,7 +175,7 @@ class MessageTest extends TestCase {
 		$this->assertEquals([$this->attachment1], $this->message->getAttachments());
 		// test set by setter multiple
 		$this->message->setAttachments($this->attachment1, $this->attachment2);
-		$this->assertEquals([$this->attachment1, $this->attachment1, $this->attachment2], $this->message->getAttachments());
+		$this->assertEquals([$this->attachment1, $this->attachment2], $this->message->getAttachments());
 
 	}
 }
