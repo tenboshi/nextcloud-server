@@ -8,12 +8,12 @@
 namespace OCA\DAV\DAV;
 
 use Exception;
+use OCA\DAV\CalDAV\Calendar;
 use OCA\DAV\Connector\Sabre\Directory;
 use OCA\DAV\Connector\Sabre\FilesPlugin;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use OCP\IUser;
-use Sabre\CalDAV\ICalendar;
 use Sabre\DAV\Exception as DavException;
 use Sabre\DAV\PropertyStorage\Backend\BackendInterface;
 use Sabre\DAV\PropFind;
@@ -319,8 +319,28 @@ class CustomPropertiesBackend implements BackendInterface {
 
 				// $path is the principal here as this prop is only set on principals
 				$node = $this->tree->getNodeForPath($href);
-				if (!($node instanceof ICalendar) || $node->getOwner() !== $path) {
+				if (!($node instanceof Calendar) || $node->getOwner() !== $path) {
 					throw new DavException('No such calendar');
+				}
+
+				// Sanity checks for a calendar that should handle invitations
+				if ($node->isSubscription()
+					|| !$node->canWrite()
+					|| $node->isShared()
+					|| $node->isDeleted()) {
+					throw new DavException('Calendar is a subscription, not writable, shared or deleted');
+				}
+
+				// Calendar must support VEVENTs
+				$sCCS = '{urn:ietf:params:xml:ns:caldav}supported-calendar-component-set';
+				$calendarProperties = $node->getProperties([$sCCS]);
+				if (isset($calendarProperties[$sCCS])) {
+					$supportedComponents = $calendarProperties[$sCCS]->getValue();
+				} else {
+					$supportedComponents = ['VJOURNAL', 'VTODO', 'VEVENT'];
+				}
+				if (!in_array('VEVENT', $supportedComponents, true)) {
+					throw new DavException('Calendar does not support VEVENT components');
 				}
 
 				break;

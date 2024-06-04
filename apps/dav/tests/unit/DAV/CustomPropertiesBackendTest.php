@@ -5,11 +5,12 @@
  */
 namespace OCA\DAV\Tests\DAV;
 
+use OCA\DAV\CalDAV\Calendar;
 use OCA\DAV\DAV\CustomPropertiesBackend;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use OCP\IUser;
-use Sabre\CalDAV\ICalendar;
+use Sabre\CalDAV\Xml\Property\SupportedCalendarComponentSet;
 use Sabre\DAV\Exception\NotFound;
 use Sabre\DAV\PropFind;
 use Sabre\DAV\PropPatch;
@@ -195,9 +196,19 @@ class CustomPropertiesBackendTest extends TestCase {
 	public function testPropFindPrincipalCall(): void {
 		$this->tree->method('getNodeForPath')
 			->willReturnCallback(function ($uri) {
-				$node = $this->createMock(ICalendar::class);
+				$node = $this->createMock(Calendar::class);
 				$node->method('getOwner')
 					->willReturn('principals/users/dummy_user_42');
+				$node->method('isSubscription')
+					->willReturn(false);
+				$node->method('canWrite')
+					->willReturn(true);
+				$node->method('isShared')
+					->willReturn(false);
+				$node->method('isDeleted')
+					->willReturn(false);
+				$node->method('getProperties')
+					->willReturn([]);
 				return $node;
 			});
 
@@ -242,21 +253,21 @@ class CustomPropertiesBackendTest extends TestCase {
 		return [
 			[ // Exists
 				'dummy_user_42',
-				['calendars/dummy_user_42/foo/' => ICalendar::class],
+				['calendars/dummy_user_42/foo/' => Calendar::class],
 				['{urn:ietf:params:xml:ns:caldav}schedule-default-calendar-URL' => new Href('calendars/dummy_user_42/foo/')],
 				['{urn:ietf:params:xml:ns:caldav}schedule-default-calendar-URL'],
 				['{urn:ietf:params:xml:ns:caldav}schedule-default-calendar-URL' => new Href('calendars/dummy_user_42/foo/')],
 			],
 			[ // Doesn't exist
 				'dummy_user_42',
-				['calendars/dummy_user_42/foo/' => ICalendar::class],
+				['calendars/dummy_user_42/foo/' => Calendar::class],
 				['{urn:ietf:params:xml:ns:caldav}schedule-default-calendar-URL' => new Href('calendars/dummy_user_42/bar/')],
 				['{urn:ietf:params:xml:ns:caldav}schedule-default-calendar-URL'],
 				[],
 			],
 			[ // No privilege
 				'dummy_user_42',
-				['calendars/user2/baz/' => ICalendar::class],
+				['calendars/user2/baz/' => Calendar::class],
 				['{urn:ietf:params:xml:ns:caldav}schedule-default-calendar-URL' => new Href('calendars/user2/baz/')],
 				['{urn:ietf:params:xml:ns:caldav}schedule-default-calendar-URL'],
 				[],
@@ -319,6 +330,18 @@ class CustomPropertiesBackendTest extends TestCase {
 					$node = $this->createMock($nodes[$uri]);
 					$node->method('getOwner')
 						->willReturn("principals/users/$owner");
+					if ($nodes[$uri] === Calendar::class) {
+						$node->method('isSubscription')
+							->willReturn(false);
+						$node->method('canWrite')
+							->willReturn(true);
+						$node->method('isShared')
+							->willReturn(false);
+						$node->method('isDeleted')
+							->willReturn(false);
+						$node->method('getProperties')
+							->willReturn([]);
+					}
 					return $node;
 				}
 				throw new NotFound('Node not found');
@@ -349,9 +372,19 @@ class CustomPropertiesBackendTest extends TestCase {
 			});
 		$this->tree->method('getNodeForPath')
 			->willReturnCallback(function ($uri) {
-				$node = $this->createMock(ICalendar::class);
+				$node = $this->createMock(Calendar::class);
 				$node->method('getOwner')
 					->willReturn('principals/users/' . $this->user->getUID());
+				$node->method('isSubscription')
+					->willReturn(false);
+				$node->method('canWrite')
+					->willReturn(true);
+				$node->method('isShared')
+					->willReturn(false);
+				$node->method('isDeleted')
+					->willReturn(false);
+				$node->method('getProperties')
+					->willReturn([]);
 				return $node;
 			});
 
@@ -375,6 +408,258 @@ class CustomPropertiesBackendTest extends TestCase {
 			['principals/users/dummy_user_42', [], ['{urn:ietf:params:xml:ns:caldav}schedule-default-calendar-URL' => new Href('foo/bar/')], ['{urn:ietf:params:xml:ns:caldav}schedule-default-calendar-URL' => new Href('foo/bar/')]],
 			['principals/users/dummy_user_42', [], ['{urn:ietf:params:xml:ns:caldav}schedule-default-calendar-URL' => new Href(self::BASE_URI . 'foo/bar/')], ['{urn:ietf:params:xml:ns:caldav}schedule-default-calendar-URL' => new Href('foo/bar/')]],
 		];
+	}
+
+	public function testPropPatchWithSubscription(): void {
+		$path = 'principals/users/' . $this->user->getUID();
+
+		$node = $this->createMock(Calendar::class);
+		$node->expects(self::once())
+			->method('getOwner')
+			->willReturn($path);
+		$node->expects(self::once())
+			->method('isSubscription')
+			->willReturn(true);
+		$node->expects(self::never())
+			->method('canWrite');
+		$node->expects(self::never())
+			->method('isShared');
+		$node->expects(self::never())
+			->method('isDeleted');
+		$node->expects(self::never())
+			->method('getProperties');
+
+		$this->server->method('calculateUri')
+			->willReturnCallback(function ($uri) {
+				if (str_starts_with($uri, self::BASE_URI)) {
+					return trim(substr($uri, strlen(self::BASE_URI)), '/');
+				}
+				return null;
+			});
+		$this->tree->expects(self::once())
+			->method('getNodeForPath')
+			->with('foo/bar/')
+			->willReturn($node);
+
+		$storedProps = $this->getProps($this->user->getUID(), $path);
+		$this->assertEquals([], $storedProps);
+
+		$propPatch = new PropPatch([
+			'{urn:ietf:params:xml:ns:caldav}schedule-default-calendar-URL' => new Href('foo/bar/'),
+		]);
+		$this->backend->propPatch($path, $propPatch);
+		try {
+			$propPatch->commit();
+		} catch (\Throwable $e) {
+			$this->assertInstanceOf(\Sabre\DAV\Exception::class, $e);
+		}
+
+		$storedProps = $this->getProps($this->user->getUID(), $path);
+		$this->assertEquals([], $storedProps);
+	}
+
+	public function testPropPatchWithoutWrite(): void {
+		$path = 'principals/users/' . $this->user->getUID();
+
+		$node = $this->createMock(Calendar::class);
+		$node->expects(self::once())
+			->method('getOwner')
+			->willReturn($path);
+		$node->expects(self::once())
+			->method('isSubscription')
+			->willReturn(false);
+		$node->expects(self::once())
+			->method('canWrite')
+			->willReturn(false);
+		$node->expects(self::never())
+			->method('isShared');
+		$node->expects(self::never())
+			->method('isDeleted');
+		$node->expects(self::never())
+			->method('getProperties');
+
+		$this->server->method('calculateUri')
+			->willReturnCallback(function ($uri) {
+				if (str_starts_with($uri, self::BASE_URI)) {
+					return trim(substr($uri, strlen(self::BASE_URI)), '/');
+				}
+				return null;
+			});
+		$this->tree->expects(self::once())
+			->method('getNodeForPath')
+			->with('foo/bar/')
+			->willReturn($node);
+
+		$storedProps = $this->getProps($this->user->getUID(), $path);
+		$this->assertEquals([], $storedProps);
+
+		$propPatch = new PropPatch([
+			'{urn:ietf:params:xml:ns:caldav}schedule-default-calendar-URL' => new Href('foo/bar/'),
+		]);
+		$this->backend->propPatch($path, $propPatch);
+		try {
+			$propPatch->commit();
+		} catch (\Throwable $e) {
+			$this->assertInstanceOf(\Sabre\DAV\Exception::class, $e);
+		}
+
+		$storedProps = $this->getProps($this->user->getUID(), $path);
+		$this->assertEquals([], $storedProps);
+	}
+
+	public function testPropPatchWithShared(): void {
+		$path = 'principals/users/' . $this->user->getUID();
+
+		$node = $this->createMock(Calendar::class);
+		$node->expects(self::once())
+			->method('getOwner')
+			->willReturn($path);
+		$node->expects(self::once())
+			->method('isSubscription')
+			->willReturn(false);
+		$node->expects(self::once())
+			->method('canWrite')
+			->willReturn(true);
+		$node->expects(self::once())
+			->method('isShared')
+			->willReturn(true);
+		$node->expects(self::never())
+			->method('isDeleted');
+		$node->expects(self::never())
+			->method('getProperties');
+
+		$this->server->method('calculateUri')
+			->willReturnCallback(function ($uri) {
+				if (str_starts_with($uri, self::BASE_URI)) {
+					return trim(substr($uri, strlen(self::BASE_URI)), '/');
+				}
+				return null;
+			});
+		$this->tree->expects(self::once())
+			->method('getNodeForPath')
+			->with('foo/bar/')
+			->willReturn($node);
+
+		$storedProps = $this->getProps($this->user->getUID(), $path);
+		$this->assertEquals([], $storedProps);
+
+		$propPatch = new PropPatch([
+			'{urn:ietf:params:xml:ns:caldav}schedule-default-calendar-URL' => new Href('foo/bar/'),
+		]);
+		$this->backend->propPatch($path, $propPatch);
+		try {
+			$propPatch->commit();
+		} catch (\Throwable $e) {
+			$this->assertInstanceOf(\Sabre\DAV\Exception::class, $e);
+		}
+
+		$storedProps = $this->getProps($this->user->getUID(), $path);
+		$this->assertEquals([], $storedProps);
+	}
+
+	public function testPropPatchWithDeleted(): void {
+		$path = 'principals/users/' . $this->user->getUID();
+
+		$node = $this->createMock(Calendar::class);
+		$node->expects(self::once())
+			->method('getOwner')
+			->willReturn($path);
+		$node->expects(self::once())
+			->method('isSubscription')
+			->willReturn(false);
+		$node->expects(self::once())
+			->method('canWrite')
+			->willReturn(true);
+		$node->expects(self::once())
+			->method('isShared')
+			->willReturn(false);
+		$node->expects(self::once())
+			->method('isDeleted')
+			->willReturn(true);
+		$node->expects(self::never())
+			->method('getProperties');
+
+		$this->server->method('calculateUri')
+			->willReturnCallback(function ($uri) {
+				if (str_starts_with($uri, self::BASE_URI)) {
+					return trim(substr($uri, strlen(self::BASE_URI)), '/');
+				}
+				return null;
+			});
+		$this->tree->expects(self::once())
+			->method('getNodeForPath')
+			->with('foo/bar/')
+			->willReturn($node);
+
+		$storedProps = $this->getProps($this->user->getUID(), $path);
+		$this->assertEquals([], $storedProps);
+
+		$propPatch = new PropPatch([
+			'{urn:ietf:params:xml:ns:caldav}schedule-default-calendar-URL' => new Href('foo/bar/'),
+		]);
+		$this->backend->propPatch($path, $propPatch);
+		try {
+			$propPatch->commit();
+		} catch (\Throwable $e) {
+			$this->assertInstanceOf(\Sabre\DAV\Exception::class, $e);
+		}
+
+		$storedProps = $this->getProps($this->user->getUID(), $path);
+		$this->assertEquals([], $storedProps);
+	}
+
+	public function testPropPatchWithoutVeventSupport(): void {
+		$path = 'principals/users/' . $this->user->getUID();
+
+		$node = $this->createMock(Calendar::class);
+		$node->expects(self::once())
+			->method('getOwner')
+			->willReturn($path);
+		$node->expects(self::once())
+			->method('isSubscription')
+			->willReturn(false);
+		$node->expects(self::once())
+			->method('canWrite')
+			->willReturn(true);
+		$node->expects(self::once())
+			->method('isShared')
+			->willReturn(false);
+		$node->expects(self::once())
+			->method('isDeleted')
+			->willReturn(false);
+		$node->expects(self::once())
+			->method('getProperties')
+			->willReturn([
+				'{urn:ietf:params:xml:ns:caldav}supported-calendar-component-set' => new SupportedCalendarComponentSet(['VTODO']),
+			]);
+
+		$this->server->method('calculateUri')
+			->willReturnCallback(function ($uri) {
+				if (str_starts_with($uri, self::BASE_URI)) {
+					return trim(substr($uri, strlen(self::BASE_URI)), '/');
+				}
+				return null;
+			});
+		$this->tree->expects(self::once())
+			->method('getNodeForPath')
+			->with('foo/bar/')
+			->willReturn($node);
+
+		$storedProps = $this->getProps($this->user->getUID(), $path);
+		$this->assertEquals([], $storedProps);
+
+		$propPatch = new PropPatch([
+			'{urn:ietf:params:xml:ns:caldav}schedule-default-calendar-URL' => new Href('foo/bar/'),
+		]);
+		$this->backend->propPatch($path, $propPatch);
+		try {
+			$propPatch->commit();
+		} catch (\Throwable $e) {
+			$this->assertInstanceOf(\Sabre\DAV\Exception::class, $e);
+		}
+
+		$storedProps = $this->getProps($this->user->getUID(), $path);
+		$this->assertEquals([], $storedProps);
 	}
 
 	/**
