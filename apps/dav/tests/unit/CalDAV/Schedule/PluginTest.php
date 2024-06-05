@@ -317,8 +317,14 @@ class PluginTest extends TestCase {
 
 		if ($exists) {
 			$calendar = $this->createMock(Calendar::class);
-			$calendar->expects($this->once())->method('isDeleted')->willReturn($deleted);
 			$calendarHomeObject->expects($deleted && !$hasExistingCalendars ? $this->exactly(2) : $this->once())->method('getChild')->with($calendarUri)->willReturn($calendar);
+
+			if ($deleted) {
+				$this->defaultCalendarValidator->expects(self::once())
+					->method('validateScheduleDefaultCalendar')
+					->with($calendar)
+					->willThrowException(new \Sabre\DAV\Exception('Deleted calendar'));
+			}
 		}
 
 		$calendarBackend = $this->createMock(CalDavBackend::class);
