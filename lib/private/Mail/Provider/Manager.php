@@ -175,7 +175,7 @@ class Manager implements IManager {
 	 *
 	 * @param string $uid					user id
 	 *
-	 * @return array<string, non-empty-array<string, IService>>		returns collection of service objects or null if non found
+	 * @return array<string,array<string,IService>>		returns collection of service objects or null if non found
 	 */
 	public function services(string $uid): array {
 		

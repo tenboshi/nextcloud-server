@@ -95,7 +95,7 @@ interface IManager {
 	 *
 	 * @param string $uid					user id
 	 *
-	 * @return array<string,IService>		returns collection of service objects or null if non found
+	 * @return array<string,array<string,IService>>		returns collection of service objects or null if non found
 	 */
 	public function services(string $uid): array;
 
