@@ -361,7 +361,6 @@ EOF;
 						 * - calendar isn't a share
 						 * - calendar supports VEVENTs
 						 */
-						$sCCS = '{urn:ietf:params:xml:ns:caldav}supported-calendar-component-set';
 						foreach ($calendarHome->getChildren() as $node) {
 							if (!($node instanceof Calendar)) {
 								continue;

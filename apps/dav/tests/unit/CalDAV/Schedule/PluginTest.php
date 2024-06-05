@@ -387,6 +387,13 @@ class PluginTest extends TestCase {
 			->with($calendarHome .'/' . $calendarUri, [], 1)
 			->willReturn($properties);
 
+		$this->defaultCalendarValidator->method('validateScheduleDefaultCalendar')
+			->willReturnCallback(function (Calendar $node) {
+				if ($node->isDeleted()) {
+					throw new \Sabre\DAV\Exception('Deleted calendar');
+				}
+			});
+
 		$this->plugin->propFindDefaultCalendarUrl($propFind, $node);
 
 		if (!$propertiesForPath) {
