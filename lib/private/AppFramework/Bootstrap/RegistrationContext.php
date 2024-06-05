@@ -967,7 +967,7 @@ class RegistrationContext {
 	}
 
 	/**
-	 * @return ServiceRegistration<IMailProviders>[]
+	 * @return ServiceRegistration<IMailProvider>[]
 	 */
 	public function getMailProviders(): array {
 		return $this->mailProviders;
