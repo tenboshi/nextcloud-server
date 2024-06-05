@@ -9,6 +9,7 @@ namespace OCA\DAV\DAV;
 
 use Exception;
 use OCA\DAV\CalDAV\Calendar;
+use OCA\DAV\CalDAV\DefaultCalendarValidator;
 use OCA\DAV\Connector\Sabre\Directory;
 use OCA\DAV\Connector\Sabre\FilesPlugin;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -135,6 +136,7 @@ class CustomPropertiesBackend implements BackendInterface {
 
 	private Server $server;
 	private XmlService $xmlService;
+	private DefaultCalendarValidator $defaultCalendarValidator;
 
 	/**
 	 * @param Tree $tree node tree
@@ -146,6 +148,7 @@ class CustomPropertiesBackend implements BackendInterface {
 		Tree $tree,
 		IDBConnection $connection,
 		IUser $user,
+		DefaultCalendarValidator $defaultCalendarValidator,
 	) {
 		$this->server = $server;
 		$this->tree = $tree;
@@ -156,6 +159,7 @@ class CustomPropertiesBackend implements BackendInterface {
 			$this->xmlService->elementMap,
 			self::COMPLEX_XML_ELEMENT_MAP,
 		);
+		$this->defaultCalendarValidator = $defaultCalendarValidator;
 	}
 
 	/**
@@ -323,26 +327,7 @@ class CustomPropertiesBackend implements BackendInterface {
 					throw new DavException('No such calendar');
 				}
 
-				// Sanity checks for a calendar that should handle invitations
-				if ($node->isSubscription()
-					|| !$node->canWrite()
-					|| $node->isShared()
-					|| $node->isDeleted()) {
-					throw new DavException('Calendar is a subscription, not writable, shared or deleted');
-				}
-
-				// Calendar must support VEVENTs
-				$sCCS = '{urn:ietf:params:xml:ns:caldav}supported-calendar-component-set';
-				$calendarProperties = $node->getProperties([$sCCS]);
-				if (isset($calendarProperties[$sCCS])) {
-					$supportedComponents = $calendarProperties[$sCCS]->getValue();
-				} else {
-					$supportedComponents = ['VJOURNAL', 'VTODO', 'VEVENT'];
-				}
-				if (!in_array('VEVENT', $supportedComponents, true)) {
-					throw new DavException('Calendar does not support VEVENT components');
-				}
-
+				$this->defaultCalendarValidator->validateScheduleDefaultCalendar($node);
 				break;
 		}
 	}
