@@ -1,35 +1,9 @@
 <?php
+
 /**
- * @copyright Copyright (c) 2016, ownCloud, Inc.
- *
- * @author Arthur Schiwon <blizzz@arthur-schiwon.de>
- * @author Bjoern Schiessle <bjoern@schiessle.org>
- * @author Christoph Wurst <christoph@winzerhof-wurst.at>
- * @author Georg Ehrke <oc.list@georgehrke.com>
- * @author Joas Schilling <coding@schilljs.com>
- * @author John Molakvoæ <skjnldsv@protonmail.com>
- * @author Jörn Friedrich Dreyer <jfd@butonic.de>
- * @author Lukas Reschke <lukas@statuscode.ch>
- * @author Morris Jobke <hey@morrisjobke.de>
- * @author Robin Appelman <robin@icewind.nl>
- * @author Roeland Jago Douma <roeland@famdouma.nl>
- * @author Thomas Müller <thomas.mueller@tmit.eu>
- * @author Vincent Chan <plus.vincchan@gmail.com>
- *
- * @license AGPL-3.0
- *
- * This code is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License, version 3,
- * as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License, version 3,
- * along with this program. If not, see <http://www.gnu.org/licenses/>
- *
+ * SPDX-FileCopyrightText: 2016-2024 Nextcloud GmbH and Nextcloud contributors
+ * SPDX-FileCopyrightText: 2016 ownCloud, Inc.
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 namespace OC\User;
 
@@ -288,49 +262,20 @@ class Manager extends PublicEmitter implements IUserManager {
 	 * @return IUser[]
 	 * @deprecated since 27.0.0, use searchDisplayName instead
 	 */
-	public function search($pattern, $limit = null, $offset = null, $sortMode = 'uid', $sortOrder = 'asc'): array {
+	public function search($pattern, $limit = null, $offset = null) {
 		$users = [];
 		foreach ($this->backends as $backend) {
-			$backendUsers = $backend->getUsers($pattern, $limit, $offset, $sortMode, $sortOrder);
+			$backendUsers = $backend->getUsers($pattern, $limit, $offset);
 			if (is_array($backendUsers)) {
 				foreach ($backendUsers as $uid) {
 					$users[$uid] = new LazyUser($uid, $this, null, $backend);
 				}
 			}
 		}
-		switch ($sortMode.' '.$sortOrder) {
-			case 'uid desc':
-				uasort($users, function (IUser $a, IUser $b) {
-					return strcasecmp($b->getUID(), $a->getUID());
-				});
-				break;
-			case 'lastLogin asc':
-				uasort($users, function (IUser $a, IUser $b) {
-					return $a->getLastLogin() - $b->getLastLogin();
-				});
-				break;
-			case 'lastLogin desc':
-				uasort($users, function (IUser $a, IUser $b) {
-					return $b->getLastLogin() - $a->getLastLogin();
-				});
-				break;
-			case 'displayName asc':
-				uasort($users, function (IUser $a, IUser $b) {
-					return strcasecmp($a->getDisplayName(), $b->getDisplayName());
-				});
-				break;
-			case 'displayName desc':
-				uasort($users, function (IUser $a, IUser $b) {
-					return strcasecmp($b->getDisplayName(), $a->getDisplayName());
-				});
-				break;
-			default:
-				uasort($users, function (IUser $a, IUser $b) {
-					return strcasecmp($a->getUID(), $b->getUID());
-				});
-				break;
-		}
 
+		uasort($users, function (IUser $a, IUser $b) {
+			return strcasecmp($a->getUID(), $b->getUID());
+		});
 		return $users;
 	}
 
@@ -342,7 +287,7 @@ class Manager extends PublicEmitter implements IUserManager {
 	 * @param int $offset
 	 * @return IUser[]
 	 */
-	public function searchDisplayName($pattern, $limit = null, $offset = null, $sortMode = 'uid', $sortOrder = 'asc') {
+	public function searchDisplayName($pattern, $limit = null, $offset = null) {
 		$users = [];
 		foreach ($this->backends as $backend) {
 			$backendUsers = $backend->getDisplayNames($pattern, $limit, $offset);
@@ -353,48 +298,52 @@ class Manager extends PublicEmitter implements IUserManager {
 			}
 		}
 
-		switch ($sortMode.' '.$sortOrder) {
-			case 'uid asc':
-				uasort($users, function (IUser $a, IUser $b) {
-					return strcasecmp($a->getUID(), $b->getUID());
-				});
-				break;
-			case 'uid desc':
-				uasort($users, function (IUser $a, IUser $b) {
-					return strcasecmp($b->getUID(), $a->getUID());
-				});
-				break;
-			case 'lastLogin asc':
-				uasort($users, function (IUser $a, IUser $b) {
-					return $a->getLastLogin() - $b->getLastLogin();
-				});
-				break;
-			case 'lastLogin desc':
-				uasort($users, function (IUser $a, IUser $b) {
-					return $b->getLastLogin() - $a->getLastLogin();
-				});
-				break;
-			case 'displayName asc':
-				uasort($users, function (IUser $a, IUser $b) {
-					return strcasecmp($b->getDisplayName(), $a->getDisplayName());
-				});
-				break;
-			default:
-				uasort($users, function (IUser $a, IUser $b) {
-					return strcasecmp($a->getDisplayName(), $b->getDisplayName());
-				});
-				break;
-		}
-
-
+		usort($users, function (IUser $a, IUser $b) {
+			return strcasecmp($a->getDisplayName(), $b->getDisplayName());
+		});
 		return $users;
 	}
 
 	/**
 	 * @return IUser[]
 	 */
-	public function getDisabledUsers(?int $limit = null, int $offset = 0): array {
+	public function getDisabledUsers(?int $limit = null, int $offset = 0, string $search = ''): array {
 		$users = $this->config->getUsersForUserValue('core', 'enabled', 'false');
+		$users = array_combine(
+			$users,
+			array_map(
+				fn (string $uid): IUser => new LazyUser($uid, $this),
+				$users
+			)
+		);
+		if ($search !== '') {
+			$users = array_filter(
+				$users,
+				fn (IUser $user): bool =>
+					mb_stripos($user->getUID(), $search) !== false ||
+					mb_stripos($user->getDisplayName(), $search) !== false ||
+					mb_stripos($user->getEMailAddress() ?? '', $search) !== false,
+			);
+		}
+
+		$tempLimit = ($limit === null ? null : $limit + $offset);
+		foreach ($this->backends as $backend) {
+			if (($tempLimit !== null) && (count($users) >= $tempLimit)) {
+				break;
+			}
+			if ($backend instanceof IProvideEnabledStateBackend) {
+				$backendUsers = $backend->getDisabledUserList(($tempLimit === null ? null : $tempLimit - count($users)), 0, $search);
+				foreach ($backendUsers as $uid) {
+					$users[$uid] = new LazyUser($uid, $this, null, $backend);
+				}
+			}
+		}
+
+		return array_slice($users, $offset, $limit);
+	}
+
+	public function getUsersSortedByLastLogin(?int $limit = null, int $offset = 0, $search = '', $sortMode = 'lastLogin', $sortOrder = 'desc'): array {
+		$users = $this->config->getLastLoggedInUsers($search, $sortMode, $sortOrder);
 		$users = array_combine(
 			$users,
 			array_map(
@@ -820,6 +769,8 @@ class Manager extends PublicEmitter implements IUserManager {
 			'.ocdata',
 			'owncloud.log',
 			'nextcloud.log',
+			'updater.log',
+			'audit.log',
 			$appdata], true)) {
 			return false;
 		}

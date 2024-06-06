@@ -1,26 +1,9 @@
 <?php
+
 /**
- * @copyright Copyright (c) 2016, ownCloud, Inc.
- *
- * @author Christoph Wurst <christoph@winzerhof-wurst.at>
- * @author Joas Schilling <coding@schilljs.com>
- * @author Jörn Friedrich Dreyer <jfd@butonic.de>
- * @author Roeland Jago Douma <roeland@famdouma.nl>
- *
- * @license AGPL-3.0
- *
- * This code is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License, version 3,
- * as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License, version 3,
- * along with this program. If not, see <http://www.gnu.org/licenses/>
- *
+ * SPDX-FileCopyrightText: 2016-2024 Nextcloud GmbH and Nextcloud contributors
+ * SPDX-FileCopyrightText: 2016 ownCloud, Inc.
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 namespace OC\User;
 
@@ -106,11 +89,9 @@ abstract class Backend implements UserInterface {
 	 * @param string $search
 	 * @param null|int $limit
 	 * @param null|int $offset
-	 * @param string $sortMode
-	 * @param string $sortOrder
 	 * @return string[] an array of all uids
 	 */
-	public function getUsers($search = '', $limit = null, $offset = null, string $sortMode = 'uid', string $sortOrder = 'asc') {
+	public function getUsers($search = '', $limit = null, $offset = null) {
 		return [];
 	}
 
@@ -147,11 +128,9 @@ abstract class Backend implements UserInterface {
 	 * @param string $search
 	 * @param int|null $limit
 	 * @param int|null $offset
-	 * @param string $sortMode
-	 * @param string $sortOrder
 	 * @return array an array of all displayNames (value) and the corresponding uids (key)
 	 */
-	public function getDisplayNames($search = '', $limit = null, $offset = null, string $sortMode = 'uid', string $sortOrder = 'asc'): array {
+	public function getDisplayNames($search = '', $limit = null, $offset = null) {
 		$displayNames = [];
 		$users = $this->getUsers($search, $limit, $offset);
 		foreach ($users as $user) {

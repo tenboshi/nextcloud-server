@@ -1,47 +1,10 @@
 <?php
 
 declare(strict_types=1);
-
 /**
- * @copyright Copyright (c) 2016, ownCloud, Inc.
- *
- * @author adrien <adrien.waksberg@believedigital.com>
- * @author Aldo "xoen" Giambelluca <xoen@xoen.org>
- * @author Arthur Schiwon <blizzz@arthur-schiwon.de>
- * @author Bart Visscher <bartv@thisnet.nl>
- * @author Bjoern Schiessle <bjoern@schiessle.org>
- * @author Björn Schießle <bjoern@schiessle.org>
- * @author Christoph Wurst <christoph@winzerhof-wurst.at>
- * @author Daniel Calviño Sánchez <danxuliu@gmail.com>
- * @author fabian <fabian@web2.0-apps.de>
- * @author Georg Ehrke <oc.list@georgehrke.com>
- * @author Jakob Sack <mail@jakobsack.de>
- * @author Joas Schilling <coding@schilljs.com>
- * @author Jörn Friedrich Dreyer <jfd@butonic.de>
- * @author Loki3000 <github@labcms.ru>
- * @author Lukas Reschke <lukas@statuscode.ch>
- * @author Morris Jobke <hey@morrisjobke.de>
- * @author nishiki <nishiki@yaegashi.fr>
- * @author Robin Appelman <robin@icewind.nl>
- * @author Robin McCorkell <robin@mccorkell.me.uk>
- * @author Roeland Jago Douma <roeland@famdouma.nl>
- * @author Thomas Müller <thomas.mueller@tmit.eu>
- * @author Vincent Petry <vincent@nextcloud.com>
- *
- * @license AGPL-3.0
- *
- * This code is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License, version 3,
- * as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License, version 3,
- * along with this program. If not, see <http://www.gnu.org/licenses/>
- *
+ * SPDX-FileCopyrightText: 2016-2024 Nextcloud GmbH and Nextcloud contributors
+ * SPDX-FileCopyrightText: 2016 ownCloud, Inc.
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 namespace OC\User;
 
@@ -264,32 +227,16 @@ class Database extends ABackend implements
 	 * @param string $search
 	 * @param int|null $limit
 	 * @param int|null $offset
-	 * @param string $sortMode
-	 * @param string $sortOrder
 	 * @return array an array of all displayNames (value) and the corresponding uids (key)
 	 */
-	public function getDisplayNames($search = '', $limit = null, $offset = null, string $sortMode = 'uid', string $sortOrder = 'asc'): array {
+	public function getDisplayNames($search = '', $limit = null, $offset = null) {
 		$limit = $this->fixLimit($limit);
 
 		$this->fixDI();
 
 		$query = $this->dbConn->getQueryBuilder();
 
-		if ($sortMode === 'lastLogin') {
-			$lastLoginSubSelect = $this->dbConn->getQueryBuilder();
-			$lastLoginSubSelect->select('configvalue')
-				->from('preferences', 'p2')
-				->where($lastLoginSubSelect->expr()->andX(
-					$lastLoginSubSelect->expr()->eq('p2.userid', 'uid'),
-					$lastLoginSubSelect->expr()->eq('p2.appid', $lastLoginSubSelect->expr()->literal('login')),
-					$lastLoginSubSelect->expr()->eq('p2.configkey', $lastLoginSubSelect->expr()->literal('lastLogin')),
-				));
-			$orderByExpression = $query->createFunction('(' . $lastLoginSubSelect->getSQL() .')');
-		} else {
-			$orderByExpression = $query->func()->lower('displayname');
-		}
-
-		$query->select('uid', 'displayname', $orderByExpression)
+		$query->select('uid', 'displayname')
 			->from($this->table, 'u')
 			->leftJoin('u', 'preferences', 'p', $query->expr()->andX(
 				$query->expr()->eq('userid', 'uid'),
@@ -300,7 +247,7 @@ class Database extends ABackend implements
 			->where($query->expr()->iLike('uid', $query->createPositionalParameter('%' . $this->dbConn->escapeLikeParameter($search) . '%')))
 			->orWhere($query->expr()->iLike('displayname', $query->createPositionalParameter('%' . $this->dbConn->escapeLikeParameter($search) . '%')))
 			->orWhere($query->expr()->iLike('configvalue', $query->createPositionalParameter('%' . $this->dbConn->escapeLikeParameter($search) . '%')))
-			->orderBy($orderByExpression, $sortOrder)
+			->orderBy($query->func()->lower('displayname'), 'ASC')
 			->addOrderBy('uid_lower', 'ASC')
 			->setMaxResults($limit)
 			->setFirstResult($offset);
@@ -434,13 +381,15 @@ class Database extends ABackend implements
 	 * @param null|int $offset
 	 * @return string[] an array of all uids
 	 */
-	public function getUsers($search = '', $limit = null, $offset = null, $orderBy = 'lastLogin', $sort = 'DESC'): array {
+	public function getUsers($search = '', $limit = null, $offset = null) {
 		$limit = $this->fixLimit($limit);
 
-		$users = $this->getDisplayNames($search, $limit, $offset, $orderBy, $sort);
-		return array_map(function ($uid) {
+		$users = $this->getDisplayNames($search, $limit, $offset);
+		$userIds = array_map(function ($uid) {
 			return (string)$uid;
 		}, array_keys($users));
+		sort($userIds, SORT_STRING | SORT_FLAG_CASE);
+		return $userIds;
 	}
 
 	/**
