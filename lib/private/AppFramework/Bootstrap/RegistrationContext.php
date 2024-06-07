@@ -416,10 +416,10 @@ class RegistrationContext {
 				);
 			}
 
-			public function registerMailProvider(string $mailProviderClass): void {
+			public function registerMailProvider(string $class): void {
 				$this->context->registerMailProvider(
 					$this->appId,
-					$mailProviderClass
+					$class
 				);
 			}
 		};
