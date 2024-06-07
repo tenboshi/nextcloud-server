@@ -1,5 +1,8 @@
 <template>
 	<Fragment>
+		<FilesListFilterType ref="filters[]" />
+		<FilesListFilterTime ref="filters[]" />
+		<FilesListFilterName ref="filters[]" />
 	</Fragment>
 </template>
 
@@ -9,8 +12,19 @@ import type { PropType } from 'vue'
 
 import { Fragment } from 'vue-frag'
 import { defineComponent } from 'vue'
+import FilesListFilterTime from './FilesListFilterTime.vue'
+import FilesListFilterType from './FilesListFilterType.vue'
+import FilesListFilterName from './FilesListFilterName.vue'
 
 export default defineComponent({
+	name: 'FilesListFilters',
+
+	components: {
+		Fragment,
+		FilesListFilterTime,
+		FilesListFilterType,
+		FilesListFilterName,
+	},
 
 	props: {
 		currentView: {
