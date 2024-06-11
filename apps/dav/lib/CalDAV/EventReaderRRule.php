@@ -37,24 +37,31 @@ class EventReaderRRule extends \Sabre\VObject\Recur\RRuleIterator {
 
 	public function concludes(): \DateTime | null {
 		if (isset($this->until)) {
-			return new \DateTime($this->until->format(\DateTimeInterface::ATOM));
-		} elseif ($this->counter > 0) {
+			return \DateTime::createFromImmutable($this->until);
+		} elseif ($this->count > 0) {
+			// temporarly store current reccurance date
+			$currentReccuranceDate = $this->currentDate;
 			// iterate over occurances until last one (subtract 2 from count for start and end occurance)
 			while ($this->counter <= ($this->count - 2)) {
 				$this->next();
 			}
-			return new \DateTime($this->current()->format(\DateTimeInterface::ATOM));
+			// temporarly store last reccurance date
+			$lastReccuranceDate = $this->currentDate;
+			// restore current reccurance date
+			$this->currentDate = $currentReccuranceDate;
+			// return last recurrance date
+			return \DateTime::createFromImmutable($lastReccuranceDate);
 		} else {
 			return null;
 		}
 	}
 
-	public function concludesAfter(): string {
-		return $this->count;
+	public function concludesAfter(): int | null {
+		return isset($this->count) ? $this->count : null;
 	}
 
-	public function concludesOn(): \DateTime {
-		return new \DateTime($this->until->format(\DateTimeInterface::ATOM));
+	public function concludesOn(): \DateTime | null {
+		return isset($this->until) ? \DateTime::createFromImmutable($this->until) : null;
 	}
 
 	public function daysOfWeek(): array {
@@ -69,12 +76,8 @@ class EventReaderRRule extends \Sabre\VObject\Recur\RRuleIterator {
 		return $this->byYearDay;
 	}
 
-	public function weeksOfMonth(): array {
-		return $this->byWeekNo;
-	}
-
 	public function weeksOfYear(): array {
-		return $this->byDay;
+		return $this->byWeekNo;
 	}
 
 	public function monthsOfYear(): array {

@@ -131,9 +131,13 @@ class IMipService {
 	 * @return array
 	 */
 	public function buildBodyData(VEvent $vEvent, ?VEvent $oldVEvent): array {
+
+		// construct event reader
+		$eventReaderCurrent = new EventReader($vEvent);
+		$eventReaderPrevious = !empty($oldVEvent) ? new EventReader($oldVEvent) : null;
 		$defaultVal = '';
 		$data = [];
-		$data['meeting_when'] = isset($vEvent->RRULE) ? $this->generateWhenStringRecurring($vEvent) : $this->generateWhenStringSingular($vEvent);
+		$data['meeting_when'] = $eventReaderCurrent->recurs() ? $this->generateWhenStringRecurring($eventReaderCurrent) : $this->generateWhenStringSingular($vEvent);
 
 		foreach(self::STRING_DIFF as $key => $property) {
 			$data[$key] = self::readPropertyWithDefault($vEvent, $property, $defaultVal);
@@ -146,7 +150,7 @@ class IMipService {
 		}
 
 		if(!empty($oldVEvent)) {
-			$oldMeetingWhen = isset($oldVEvent->RRULE) ? $this->generateWhenStringRecurring($oldVEvent) : $this->generateWhenStringSingular($oldVEvent);
+			$oldMeetingWhen = $eventReaderPrevious->recurs() ? $this->generateWhenStringRecurring($eventReaderPrevious) : $this->generateWhenStringSingular($oldVEvent);
 			$data['meeting_title_html'] = $this->generateDiffString($vEvent, $oldVEvent, 'SUMMARY', $data['meeting_title']);
 			$data['meeting_description_html'] = $this->generateDiffString($vEvent, $oldVEvent, 'DESCRIPTION', $data['meeting_description']);
 			$data['meeting_location_html'] = $this->generateLinkifiedDiffString($vEvent, $oldVEvent, 'LOCATION', $data['meeting_location']);
@@ -160,29 +164,27 @@ class IMipService {
 					: $data['meeting_when'];
 		}
 
-		if (isset($vEvent->RRULE)) {
-			// construct recurrance iterator
-			$er = new EventReader($vEvent);
+		if ($eventReaderCurrent->recurs()) {
 			// current date
 			$dateNow = new \DateTime('NOW');
 			// forward to current date
-			$er->recurrenceAdvanceTo($dateNow);
+			$eventReaderCurrent->recurrenceAdvanceTo($dateNow);
 			// calculate interval
-			$dateInterval = $dateNow->diff($er->recurrenceDate());
+			$dateInterval = $dateNow->diff($eventReaderCurrent->recurrenceDate());
 			// construct occurring message
-			$data['meeting_occurring'] = $this->generateIntervalString($dateInterval, 'In', 'Next') . ' on ' . $this->l10n->l('date', $er->recurrenceDate());
+			$data['meeting_occurring'] = $this->generateIntervalString($dateInterval, 'In', 'Next') . ' on ' . $this->l10n->l('date', $eventReaderCurrent->recurrenceDate());
 			// forward one occurance
-			$er->recurrenceAdvance();
+			$eventReaderCurrent->recurrenceAdvance();
 			// evaluate if occurance is valid
-			if ($er->recurrenceDate()) {
+			if ($eventReaderCurrent->recurrenceDate() !== null) {
 				// add occurance to message
-				$data['meeting_occurring'] .= ' then on ' . $this->l10n->l('date', $er->recurrenceDate());
+				$data['meeting_occurring'] .= ' then on ' . $this->l10n->l('date', $eventReaderCurrent->recurrenceDate());
 				// forward one occurance
-				$er->recurrenceAdvance();
+				$eventReaderCurrent->recurrenceAdvance();
 				// evaluate if occurance is valid
-				if ($er->recurrenceDate()) {
+				if ($eventReaderCurrent->recurrenceDate()) {
 					// add occurance to message
-					$data['meeting_occurring'] .= ' and ' . $this->l10n->l('date', $er->recurrenceDate());
+					$data['meeting_occurring'] .= ' and ' . $this->l10n->l('date', $eventReaderCurrent->recurrenceDate());
 				}
 			}
 		}
@@ -286,15 +288,16 @@ class IMipService {
 	}
 
 	/**
-	 * @param IL10N $this->l10n
-	 * @param VEvent $vevent
-	 * @return false|int|string
+	 * genarates a when string based on recurrance precision/frequency
+	 *
+	 * @since 30.0.0
+	 * 
+	 * @param EventReader $er
+	 *
+	 * @return string
 	 */
-	public function generateWhenStringRecurring(VEvent $vevent): string {
+	public function generateWhenStringRecurring(EventReader $er): string {
 
-		// construct recurrance iterator
-		$er = new EventReader($vevent);
-		
 		switch ($er->recurringPrecision()) {
 			case 'daily':
 				return $this->generateWhenStringRecurringDaily($er);
@@ -311,6 +314,15 @@ class IMipService {
 		}
 	}
 
+	/**
+	 * genarates a when string for a daily precision/frequency
+	 *
+	 * @since 30.0.0
+	 * 
+	 * @param EventReader $er
+	 *
+	 * @return string
+	 */
 	public function generateWhenStringRecurringDaily(EventReader $er): string {
 		
 		// initial frequency
@@ -330,6 +342,15 @@ class IMipService {
 		return $when;
 	}
 
+	/**
+	 * genarates a when string for a weekly precision/frequency
+	 *
+	 * @since 30.0.0
+	 * 
+	 * @param EventReader $er
+	 *
+	 * @return string
+	 */
 	public function generateWhenStringRecurringWeekly(EventReader $er): string {
 		
 		// initial frequency
@@ -351,6 +372,15 @@ class IMipService {
 		return $when;
 	}
 
+	/**
+	 * genarates a when string for a monthly precision/frequency
+	 *
+	 * @since 30.0.0
+	 * 
+	 * @param EventReader $er
+	 *
+	 * @return string
+	 */
 	public function generateWhenStringRecurringMonthly(EventReader $er): string {
 		
 		// initial frequency
@@ -376,6 +406,15 @@ class IMipService {
 		return $when;
 	}
 
+	/**
+	 * genarates a when string for a yearly precision/frequency
+	 *
+	 * @since 30.0.0
+	 * 
+	 * @param EventReader $er
+	 *
+	 * @return string
+	 */
 	public function generateWhenStringRecurringYearly(EventReader $er): string {
 		
 		// initial frequency

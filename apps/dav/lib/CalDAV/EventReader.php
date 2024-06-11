@@ -39,7 +39,8 @@ class EventReader {
 	protected DateTimeZone $baseEventStartTimeZone;
 	protected DateTimeInterface $baseEventEndDate;
 	protected DateTimeZone $baseEventEndTimeZone;
-	protected int $baseEventDuration;
+	protected bool $baseEventStartDateFloating = false;
+	protected int $basebaseEventDuration;
 
 	protected EventReaderRRule $rruleIterator;
 	protected EventReaderRDate $rdateIterator;
@@ -47,7 +48,7 @@ class EventReader {
 	protected EventReaderRDate $edateIterator;
 
 	protected array $recurrenceModified;
-	protected DateTimeInterface $recurrenceCurrentDate;
+	protected ?DateTimeInterface $recurrenceCurrentDate;
 
 	protected array $dayNamesMap = [
 		'MO' => 'Monday', 'TU' => 'Tuesday', 'WE' => 'Wednesday', 'TH' => 'Thursday', 'FR' => 'Friday', 'SA' => 'Saturday', 'SU' => 'Sunday'
@@ -56,7 +57,7 @@ class EventReader {
 		1 => 'January', 2 => 'February', 3 => 'March', 4 => 'April', 5 => 'May', 6 => 'June',
 		7 => 'July', 8 => 'August', 9 => 'September', 10 => 'October', 11 => 'November', 12 => 'December'
 	];
-	protected array $relativePositionNamesMap = [
+	protected array $relativeWeeksOfMonthMap = [
 		1 => 'First', 2 => 'Second', 3 => 'Third', 4 => 'Fourth', 5 => 'Fifty', -1 => 'Last', -2 => 'Second Last'
 	];
 
@@ -73,6 +74,8 @@ class EventReader {
 	 * at some point in the future.
 	 *
 	 * The $uid parameter is only required for the first method.
+	 *
+	 * @since 30.0.0
 	 *
 	 * @param VCalendar|VEvent|Array|String $input
 	 * @param string|null     				$uid
@@ -136,7 +139,7 @@ class EventReader {
 		}
 		// evaluate if event calendar wrapper has a time zone
 		elseif (isset($input->VTIMEZONE[0]) && isset($input->VTIMEZONE[0]->TZID)) {
-			$this->baseEventStartTimeZone = new DateTimeZone($input->VTIMEZONE[0]->TZID);
+			$this->baseEventStartTimeZone = new DateTimeZone($input->VTIMEZONE[0]->TZID->getValue());
 		}
 		// otherwise, as a last resort use the UTC timezone
 		else {
@@ -149,37 +152,49 @@ class EventReader {
 		if (!is_null($timeZone)) {
 			$this->baseEventEndTimeZone = $timeZone;
 		}
-		// evaluate if event start date has a timezone parameter
+		// evaluate if event end date has a timezone parameter
 		elseif (isset($this->baseEvent->DTEND->parameters['TZID'])) {
 			$this->baseEventEndTimeZone = new DateTimeZone($this->baseEvent->DTEND->parameters['TZID']->getValue());
 		}
 		// evaluate if event calendar wrapper has a time zone
-		elseif (isset($input->VTIMEZONE[1]) && isset($input->VTIMEZONE[1]->TZID)) {
-			$this->baseEventEndTimeZone = new DateTimeZone($input->VTIMEZONE[1]->TZID);
+		elseif (isset($input->VTIMEZONE[0]) && isset($input->VTIMEZONE[0]->TZID)) {
+			$this->baseEventEndTimeZone = new DateTimeZone($input->VTIMEZONE[0]->TZID->getValue());
 		}
-		// otherwise, as a last resort use the UTC timezone
+		// otherwise, as a last resort use the start date time zone
 		else {
-			$this->baseEventEndTimeZone = new DateTimeZone('UTC');
+			$this->baseEventEndTimeZone = clone $this->baseEventStartTimeZone;
 		}
 
 		$this->baseEventStartDate = $this->baseEvent->DTSTART->getDateTime($this->baseEventStartTimeZone);
-		$this->baseEventEndDate = $this->baseEvent->DTEND->getDateTime($this->baseEventEndTimeZone);
-		$this->allDay = !$this->baseEvent->DTSTART->hasTime();
+		$this->baseEventStartDateFloating = $this->baseEvent->DTSTART->isFloating();
 
-		// determain event duration
+		// determain event end date and duration
+		// evaluate if end date exists
+		// extract end date and calculate duration
 		if (isset($this->baseEvent->DTEND)) {
-			$this->eventDuration =
-				$this->baseEvent->DTEND->getDateTime($this->baseEventTimeZone)->getTimeStamp() -
+			$this->baseEventEndDate = $this->baseEvent->DTEND->getDateTime($this->baseEventEndTimeZone);
+			$this->baseEventEndDateFloating = $this->baseEvent->DTEND->isFloating();
+			$this->baseEventDuration =
+				$this->baseEvent->DTEND->getDateTime($this->baseEventEndTimeZone)->getTimeStamp() -
 				$this->baseEventStartDate->getTimeStamp();
-		} elseif (isset($this->baseEvent->DURATION)) {
-			$duration = $this->baseEvent->DURATION->getDateInterval();
-			$end = clone $this->baseEventStartDate;
-			$end = $end->add($duration);
-			$this->eventDuration = $end->getTimeStamp() - $this->baseEventStartDate->getTimeStamp();
-		} elseif ($this->allDay) {
-			$this->eventDuration = 3600 * 24;
-		} else {
-			$this->eventDuration = 0;
+		}
+		// evaluate if duration exists
+		// extract duration and calculate end date
+		elseif (isset($this->baseEvent->DURATION)) {
+			$this->baseEventDuration = $this->baseEvent->DURATION->getDateInterval();
+			$this->baseEventEndDate = ((clone $this->baseEventStartDate)->add($this->baseEventDuration));
+		}
+		// evaluate if start date is floating
+		// set duration to 24 hours and calculate the end date
+		// according to the rfc any event without a end date or duration is a complete day
+		elseif ($this->baseEventStartDateFloating == true) {
+			$this->baseEventDuration = 86400;
+			$this->baseEventEndDate = ((clone $this->baseEventStartDate)->add($this->baseEventDuration));
+		}
+		// otherwise, set duration to zero this should never happen
+		else {
+			$this->baseEventDuration = 0;
+			$this->baseEventEndDate = $this->baseEventStartDate;
 		}
 
 		if (isset($this->baseEvent->RRULE)) {
@@ -190,7 +205,7 @@ class EventReader {
 		}
 		if (isset($this->baseEvent->RDATE)) {
 			$this->rdateIterator = new EventReaderRDate(
-				$this->baseEvent->RDATE->getParts(),
+				$this->baseEvent->RDATE->getValue(),
 				$this->baseEventStartDate
 			);
 		}
@@ -202,7 +217,7 @@ class EventReader {
 		}
 		if (isset($this->baseEvent->EXDATE)) {
 			$this->edateIterator = new EventReaderRDate(
-				$this->baseEvent->EXDATE->getParts(),
+				$this->baseEvent->EXDATE->getValue(),
 				$this->baseEventStartDate
 			);
 		}
@@ -214,85 +229,242 @@ class EventReader {
 		$this->recurrenceCurrentDate = clone $this->baseEventStartDate;
 	}
 
-	public function startDate(?string $format = null): string {
-		if (isset($format)) {
-			return $this->baseEventStartDate->format($format);
-		} else {
-			return $this->baseEventStartDate->format('Y-m-d');
+	/**
+	 * retrieve date and time of event start
+	 *
+	 * @since 30.0.0
+	 *
+	 * @return DateTime
+	 */
+	public function startDateTime(): DateTime {
+		return DateTime::createFromImmutable($this->baseEventStartDate);
+	}
+
+	/**
+	 * retrieve time zone of event start
+	 *
+	 * @since 30.0.0
+	 *
+	 * @return DateTimeZone
+	 */
+	public function startTimeZone(): DateTimeZone {
+		return $this->baseEventStartTimeZone;
+	}
+
+	/**
+	 * retrieve date and time of event end
+	 *
+	 * @since 30.0.0
+	 *
+	 * @return DateTime
+	 */
+	public function endDateTime(): DateTime {
+		return DateTime::createFromImmutable($this->baseEventEndDate);
+	}
+
+	/**
+	 * retrieve time zone of event end
+	 *
+	 * @since 30.0.0
+	 *
+	 * @return DateTimeZone
+	 */
+	public function endTimeZone(): DateTimeZone {
+		return $this->baseEventEndTimeZone;
+	}
+
+	/**
+	 * is this an all day event
+	 *
+	 * @since 30.0.0
+	 *
+	 * @return bool
+	 */
+	public function entireDay(): bool {
+		return $this->baseEventStartDateFloating;
+	}
+
+	/**
+	 * is this a recurring event
+	 *
+	 * @since 30.0.0
+	 *
+	 * @return bool
+	 */
+	public function recurs(): bool {
+		return (isset($this->rruleIterator) || isset($this->rdateIterator));
+	}
+
+	/**
+	 * event recurrance pattern
+	 *
+	 * @since 30.0.0
+	 *
+	 * @return string|null				R - Relative or A - Absolute
+	 */
+	public function recurringPattern(): string | null {
+		if (!isset($this->rruleIterator) && !isset($this->rdateIterator)) {
+			return null;
 		}
-	}
-
-	public function startTime(?string $format = null): string {
-		if (isset($format)) {
-			return $this->baseEventStartDate->format($format);
-		} else {
-			return $this->baseEventStartDate->format('H:ia');
+		if (isset($this->rruleIterator) && $this->rruleIterator->isRelative()) {
+			return 'R';
 		}
+		return 'A';
 	}
 
-	public function startTimeZone(): string {
-		return $this->baseEventStartTimeZone->getName();
-	}
-
-	public function endDate(?string $format = null): string {
-		if (isset($format)) {
-			return $this->baseEventEndDate->format($format);
-		} else {
-			return $this->baseEventEndDate->format('Y-m-d');
-		}
-	}
-
-	public function endTime(?string $format = null): string {
-		if (isset($format)) {
-			return $this->baseEventEndDate->format($format);
-		} else {
-			return $this->baseEventEndDate->format('H:ia');
-		}
-	}
-
-	public function endTimeZone(): string {
-		return $this->baseEventEndTimeZone->getName();
-	}
-
-	public function isAllDay(): string {
-		return $this->frequency;
-	}
-
-	public function recurring(): bool {
-		return ($this->rruleIterator || $this->rdateIterator);
-	}
-
-	public function recurringPattern(): string {
-		return ($this->rruleIterator->isRelative()) ? 'R' : 'A';
-	}
-
+	/**
+	 * event recurrance precision
+	 *
+	 * @since 30.0.0
+	 *
+	 * @return string|null			daily, weekly, monthly, yearly, fixed
+	 */
 	public function recurringPrecision(): string | null {
-		return $this->rruleIterator->precision();
+		if (isset($this->rruleIterator)) {
+			return $this->rruleIterator->precision();
+		}
+		if (isset($this->rdateIterator)) {
+			return 'fixed';
+		}
+		return null;
 	}
 
+	/**
+	 * event recurrance interval
+	 *
+	 * @since 30.0.0
+	 *
+	 * @return int|null
+	 */
 	public function recurringInterval(): int | null {
-		return $this->rruleIterator->interval();
+		return isset($this->rruleIterator) ? $this->rruleIterator->interval() : null;
 	}
 
-	public function recurringConcludes(): \DateTime | null {
-		return $this->rruleIterator->concludes();
+	/**
+	 * event recurrance conclusion
+	 * 
+	 * returns true if RRULE with UNTIL or COUNT (calculated) is used
+	 * returns true RDATE is used
+	 * returns false if RRULE or RDATE are absent, or RRRULE is infinite
+	 *
+	 * @since 30.0.0
+	 *
+	 * @return bool
+	 */
+	public function recurringConcludes(): bool {
+
+		// retrieve rrule conclusions
+		if (isset($this->rruleIterator) && (
+			!empty($this->rruleIterator->concludesOn()) || 
+			!empty($this->rruleIterator->concludesAfter())
+		)) {
+			return true;
+		}
+		// retrieve rdate conclusions
+		if (isset($this->rdateIterator) && 
+			$this->rdateIterator->concludesAfter()
+		) {
+			return true;
+		}
+
+		return false;
+
 	}
 
+	/**
+	 * event recurrance conclusion iterations
+	 * 
+	 * returns the COUNT value if RRULE is used
+	 * returns the collection count if RDATE is used
+	 * returns combined count of RRULE COUNT and RDATE if both are used
+	 * returns null if RRULE and RDATE are absent
+	 *
+	 * @since 30.0.0
+	 *
+	 * @return int|null
+	 */
 	public function recurringConcludesAfter(): int | null {
-		return $this->rruleIterator->concludesAfter();
+		
+		// construct count place holder
+		$count = 0;
+		// retrieve and add RRULE iterations count
+		$count += isset($this->rruleIterator) ? $this->rruleIterator->concludesAfter() : null;
+		// retrieve and add RDATE iterations count
+		$count += isset($this->rdateIterator) ? $this->rdateIterator->concludesAfter() : null;
+		// return count
+		return !empty($count) ? $count : null;
+
 	}
 
+	/**
+	 * event recurrance conclusion date
+	 * 
+	 * returns the last date of UNTIL or COUNT (calculated) if RRULE is used
+	 * returns the last date in the collection if RDATE is used
+	 * returns the highest date if both RRULE and RDATE are used
+	 * returns null if RRULE and RDATE are absent or RRULE is infinite
+	 *
+	 * @since 30.0.0
+	 *
+	 * @return DateTime|null
+	 */
 	public function recurringConcludesOn(): \DateTime | null {
-		return  $this->rruleIterator->concludesOn();
+
+		// retrieve rrule conclusion date
+		if (isset($this->rruleIterator)) {
+			$rrule = $this->rruleIterator->concludes();
+			// evaluate if rrule conclusion is null
+			// if this is null that means the recurrance is infinate
+			if ($rrule === null) {
+				return null;
+			}
+		}
+		// retrieve rdate conclusion date
+		if (isset($this->rdateIterator)) {
+			$rdate = $this->rdateIterator->concludes();
+		}
+		// evaluate if both rrule and rdate have date
+		if (isset($rdate) && isset($rrule)) {
+			// return the highest date
+			return (($rdate > $rrule) ? $rdate : $rrule);
+		} elseif (isset($rrule)) {
+			return $rrule;
+		} elseif (isset($rdate)) {
+			return $rdate;
+		}
+
+		return null;
+
 	}
 
-	public function recurringDaysOfWeek(): array | null {
-		return $this->rruleIterator->daysOfWeek();
+	/**
+	 * event recurrance days of the week
+	 * 
+	 * returns collection of RRULE BYDAY day(s) ['MO','WE','FR']
+	 * returns blank collection if RRULE is absent, RDATE presents or absents has no affect
+	 *
+	 * @since 30.0.0
+	 *
+	 * @return array
+	 */
+	public function recurringDaysOfWeek(): array {
+		// evaluate if RRULE exists and return day(s) of the week
+		return isset($this->rruleIterator) ? $this->rruleIterator->daysOfWeek() : [];
 	}
 
+	/**
+	 * event recurrance days of the week (named)
+	 * 
+	 * returns collection of RRULE BYDAY day(s) ['Monday','Wednesday','Friday']
+	 * returns blank collection if RRULE is absent, RDATE presents or absents has no affect
+	 *
+	 * @since 30.0.0
+	 *
+	 * @return array
+	 */
 	public function recurringDaysOfWeekNamed(): array {
-		// extract day(s) of the month
-		$days = $this->rruleIterator->daysOfWeek();
+		// evaluate if RRULE exists and extract day(s) of the week
+		$days = isset($this->rruleIterator) ? $this->rruleIterator->daysOfWeek() : [];
 		// evaluate if months array is set
 		if (is_array($days)) {
 			// convert numberic month to month name
@@ -305,29 +477,119 @@ class EventReader {
 		return [];
 	}
 
+	/**
+	 * event recurrance days of the month
+	 * 
+	 * returns collection of RRULE BYMONTHDAY day(s) [7, 15, 31]
+	 * returns blank collection if RRULE is absent, RDATE presents or absents has no affect
+	 *
+	 * @since 30.0.0
+	 *
+	 * @return array
+	 */
 	public function recurringDaysOfMonth(): array {
-		return $this->rruleIterator->daysOfMonth();
+		// evaluate if RRULE exists and return day(s) of the month
+		return isset($this->rruleIterator) ? $this->rruleIterator->daysOfMonth() : [];
 	}
 
+	/**
+	 * event recurrance days of the year
+	 * 
+	 * returns collection of RRULE BYYEARDAY day(s) [57, 205, 365]
+	 * returns blank collection if RRULE is absent, RDATE presents or absents has no affect
+	 *
+	 * @since 30.0.0
+	 *
+	 * @return array
+	 */
 	public function recurringDaysOfYear(): array {
-		return $this->rruleIterator->daysOfYear();
+		// evaluate if RRULE exists and return day(s) of the year
+		return isset($this->rruleIterator) ? $this->rruleIterator->daysOfYear() : [];
 	}
 
+	/**
+	 * event recurrance weeks of the month
+	 * 
+	 * returns collection of RRULE SETPOS weeks(s) [1, 3, -1]
+	 * returns blank collection if RRULE is absent or SETPOS is absent, RDATE presents or absents has no affect
+	 *
+	 * @since 30.0.0
+	 *
+	 * @return array
+	 */
 	public function recurringWeeksOfMonth(): array {
-		return $this->rruleIterator->weeksOfMonth();
+		// evaluate if RRULE exists and RRULE is relative return relative position(s)
+		return (isset($this->rruleIterator) && $this->rruleIterator->isRelative()) ? $this->rruleIterator->relativePosition() : [];
 	}
 
+	/**
+	 * event recurrance weeks of the month (named)
+	 * 
+	 * returns collection of RRULE SETPOS weeks(s) [1, 3, -1]
+	 * returns blank collection if RRULE is absent or SETPOS is absent, RDATE presents or absents has no affect
+	 *
+	 * @since 30.0.0
+	 *
+	 * @return array
+	 */
+	public function recurringWeeksOfMonthNamed(): array {
+		// evaluate if RRULE exists and extract relative position(s)
+		$days = (isset($this->rruleIterator) && $this->rruleIterator->isRelative()) ? $this->rruleIterator->relativePosition() : [];
+		// evaluate if relative position is set
+		if (is_array($days)) {
+			// convert numberic relative position to relative label
+			foreach ($days as $key => $value) {
+				$days[$key] = $this->relativeWeeksOfMonthMap[$value];
+			}
+			return $days;
+		}
+		// return empty array if evaluation failed
+		return [];
+	}
+
+	/**
+	 * event recurrance weeks of the year
+	 * 
+	 * returns collection of RRULE BYWEEKNO weeks(s) [12, 32, 52]
+	 * returns blank collection if RRULE is absent, RDATE presents or absents has no affect
+	 *
+	 * @since 30.0.0
+	 *
+	 * @return array
+	 */
 	public function recurringWeeksOfYear(): array {
-		return $this->rruleIterator->weeksOfYear();
+		// evaluate if RRULE exists and return weeks(s) of the year
+		return isset($this->rruleIterator) ? $this->rruleIterator->weeksOfYear() : [];
 	}
 
+	/**
+	 * event recurrance months of the year
+	 * 
+	 * returns collection of RRULE BYMONTH month(s) [3, 7, 12]
+	 * returns blank collection if RRULE is absent, RDATE presents or absents has no affect
+	 *
+	 * @since 30.0.0
+	 *
+	 * @return array
+	 */
 	public function recurringMonthsOfYear(): array {
-		return $this->rruleIterator->monthsOfYear();
+		// evaluate if RRULE exists and return month(s) of the year
+		return isset($this->rruleIterator) ? $this->rruleIterator->monthsOfYear() : [];
 	}
 
+	/**
+	 * event recurrance months of the year (named)
+	 * 
+	 * returns collection of RRULE BYMONTH month(s) [3, 7, 12]
+	 * returns blank collection if RRULE is absent, RDATE presents or absents has no affect
+	 *
+	 * @since 30.0.0
+	 *
+	 * @return array
+	 */
 	public function recurringMonthsOfYearNamed(): array {
-		// extract months of the year
-		$months = $this->rruleIterator->monthsOfYear();
+		// evaluate if RRULE exists and extract month(s) of the year
+		$months = isset($this->rruleIterator) ? $this->rruleIterator->monthsOfYear() : null;
 		// evaluate if months array is set
 		if (is_array($months)) {
 			// convert numberic month to month name
@@ -340,31 +602,47 @@ class EventReader {
 		return [];
 	}
 
+	/**
+	 * event recurrance relative positions
+	 * 
+	 * returns collection of RRULE SETPOS value(s) [1, 5, -3]
+	 * returns blank collection if RRULE is absent, RDATE presents or absents has no affect
+	 *
+	 * @since 30.0.0
+	 *
+	 * @return array
+	 */
 	public function recurringRelativePosition(): array {
-		return $this->bySetPos;
+		// evaluate if RRULE exists and return relative position(s)
+		return isset($this->rruleIterator) ? $this->rruleIterator->relativePosition() : [];
 	}
 
-	public function recurringRelativePositionNamed(): array {
-		// extract relative position(S)
-		$days = $this->bySetPos;
-		// evaluate if relative position is set
-		if (is_array($days)) {
-			// convert numberic relative position to relative label
-			foreach ($days as $key => $value) {
-				$days[$key] = $this->relativePositionNamesMap[$value];
-			}
-			return $days;
-		}
-		// return empty array if evaluation failed
-		return [];
-	}
-
-	public function recurrenceDate(): DateTimeInterface {
-		if ($this->recurrenceCurrentDate) {
+	/**
+	 * event recurrance date
+	 * 
+	 * returns date of currently selected recurrance
+	 *
+	 * @since 30.0.0
+	 *
+	 * @return DateTime
+	 */
+	public function recurrenceDate(): DateTime | null {
+		if ($this->recurrenceCurrentDate !== null) {
 			return DateTime::createFromImmutable($this->recurrenceCurrentDate);
+		} else {
+			return null;
 		}
 	}
 
+	/**
+	 * event recurrance rewind
+	 * 
+	 * sets the current recurrance to the first recurrance in the collection
+	 *
+	 * @since 30.0.0
+	 *
+	 * @return void
+	 */
 	public function recurrenceRewind(): void {
 		// rewind and increment rrule
 		if (isset($this->rruleIterator)) {
@@ -383,9 +661,18 @@ class EventReader {
 			$this->edateIterator->rewind();
 		}
 		// set current date to event start date
-		$this->recurrenceDate = clone $this->baseEventStartDate;
+		$this->recurrenceCurrentDate = clone $this->baseEventStartDate;
 	}
 
+	/**
+	 * event recurrance advance
+	 * 
+	 * sets the current recurrance to the next recurrance in the collection
+	 *
+	 * @since 30.0.0
+	 *
+	 * @return void
+	 */
 	public function recurrenceAdvance(): void {
 		// place holders
 		$nextOccurrenceDate = null;
@@ -451,6 +738,17 @@ class EventReader {
 		}
 	}
 
+	/**
+	 * event recurrance advance
+	 * 
+	 * sets the current recurrance to the next recurrance in the collection after the specific date
+	 *
+	 * @since 30.0.0
+	 *
+	 * @param DateTimeInterface $dt			date and time to advance
+	 * 
+	 * @return void
+	 */
 	public function recurrenceAdvanceTo(DateTimeInterface $dt): void {
 		while ($this->recurrenceCurrentDate !== null && $this->recurrenceCurrentDate < $dt) {
 			$this->recurrenceAdvance();

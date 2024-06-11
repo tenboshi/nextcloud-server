@@ -92,7 +92,7 @@ class IMipServiceTest extends TestCase {
 		]);
 
 		$expected = [
-			'meeting_when' => $this->service->generateWhenString($newVevent),
+			'meeting_when' => $this->service->generateWhenStringSingular($newVevent),
 			'meeting_description' => '',
 			'meeting_title' => 'Second Breakfast',
 			'meeting_location' => '',
@@ -127,13 +127,13 @@ class IMipServiceTest extends TestCase {
 		]);
 
 		$expected = [
-			'meeting_when' => $this->service->generateWhenString($newVevent),
+			'meeting_when' => $this->service->generateWhenStringSingular($newVevent),
 			'meeting_description' => '',
 			'meeting_title' => 'Second Breakfast',
 			'meeting_location' => '',
 			'meeting_url' => '',
 			'meeting_url_html' => '',
-			'meeting_when_html' => $this->service->generateWhenString($newVevent),
+			'meeting_when_html' => $this->service->generateWhenStringSingular($newVevent),
 			'meeting_title_html' => sprintf("<span style='text-decoration: line-through'>%s</span><br />%s", 'Elevenses', 'Second Breakfast'),
 			'meeting_description_html' => '',
 			'meeting_location_html' => ''
@@ -169,7 +169,7 @@ class IMipServiceTest extends TestCase {
 			);
 
 		$expected = 'Fr., 01.01. 08:00 - 09:00 (Europe/Vienna)';
-		$actual = $this->service->generateWhenString($vevent);
+		$actual = $this->service->generateWhenStringSingular($vevent);
 		$this->assertEquals($expected, $actual);
 	}
 
