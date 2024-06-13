@@ -1,0 +1,31 @@
+/**
+ * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
+//make a pinia store
+import { defineStore } from 'pinia'
+
+export const useDeletedCommentLimbo = defineStore('deletedCommentLimbo', {
+	state: () => ({
+		idsInLimbo: [],
+	}),
+	actions: {
+		addId(id) {
+			console.log('ADDING ID TO LIMBO', id, this.idsInLimbo)
+			this.idsInLimbo.push(id)
+		},
+
+		removeId(id) {
+			console.log('REMOVING ID FROM LIMBO', id, this.idsInLimbo)
+			const index = this.idsInLimbo.indexOf(id)
+			if (index > -1) {
+				this.idsInLimbo.splice(index, 1)
+			}
+		},
+
+		checkForId(id) {
+			this.idsInLimbo.includes(id)
+		}
+	},
+})
