@@ -40,7 +40,7 @@ class PartitionedResult implements IResult {
 	}
 
 	public function closeCursor(): bool {
-		// TODO: Implement closeCursor() method.
+		return $this->result->closeCursor();
 	}
 
 	public function fetch(int $fetchMode = PDO::FETCH_ASSOC) {

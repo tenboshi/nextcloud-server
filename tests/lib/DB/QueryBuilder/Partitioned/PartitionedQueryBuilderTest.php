@@ -87,6 +87,21 @@ class PartitionedQueryBuilderTest extends TestCase {
 		$query->executeStatement();
 	}
 
+	public function testSimpleOnlyPartitionQuery() {
+		$this->setupFileCache();
+		$builder = $this->getQueryBuilder();
+		$builder->addPartition(new PartitionDefinition('filecache', ['filecache']));
+
+		// query borrowed from UserMountCache
+		$query = $builder->select('path')
+			->from('filecache')
+			->where($builder->expr()->eq('storage', $builder->createPositionalParameter(1001001, IQueryBuilder::PARAM_INT)));
+
+		$results = $query->executeQuery()->fetchAll();
+		$this->assertCount(1, $results);
+		$this->assertEquals($results[0]['path'], 'file1');
+	}
+
 	public function testSimplePartitionedQuery() {
 		$this->setupFileCache();
 		$builder = $this->getQueryBuilder();

@@ -10,7 +10,7 @@ namespace OC\DB\QueryBuilder\Partitioned;
 
 class PartitionDefinition {
 	/** @var array<string, string> */
-	public array $aliases;
+	public array $aliases = [];
 
 	/**
 	 * @param string[] $tables

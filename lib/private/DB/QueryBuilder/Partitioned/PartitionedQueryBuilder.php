@@ -57,9 +57,11 @@ class PartitionedQueryBuilder extends QueryBuilder {
 	private function applySelects(): void {
 		foreach ($this->selects as $select) {
 			foreach ($this->partitions as $partition) {
-				if ($partition->isColumnInPartition($select)) {
-					$this->splitQueries[$partition->name]->query->addSelect($select);
-					continue 2;
+				if (is_string($select) && $partition->isColumnInPartition($select)) {
+					if (isset($this->splitQueries[$partition->name])) {
+						$this->splitQueries[$partition->name]->query->addSelect($select);
+						continue 2;
+					}
 				}
 			}
 			parent::addSelect($select);
@@ -67,9 +69,11 @@ class PartitionedQueryBuilder extends QueryBuilder {
 		$this->selects = [];
 		foreach ($this->selectAliases as $select) {
 			foreach ($this->partitions as $partition) {
-				if ($partition->isColumnInPartition($select['select'])) {
-					$this->splitQueries[$partition->name]->query->selectAlias($select['select'], $select['alias']);
-					continue 2;
+				if (is_string($select['select']) && $partition->isColumnInPartition($select['select'])) {
+					if (isset($this->splitQueries[$partition->name])) {
+						$this->splitQueries[$partition->name]->query->selectAlias($select['select'], $select['alias']);
+						continue 2;
+					}
 				}
 			}
 			parent::selectAlias($select['select'], $select['alias']);
@@ -153,7 +157,7 @@ class PartitionedQueryBuilder extends QueryBuilder {
 	private function splitPredicatesByParts(array $predicates): array {
 		$partitionPredicates = [];
 		foreach ($predicates as $predicate) {
-			$partition = $this->getPartitionForPredicate($predicate);
+			$partition = $this->getPartitionForPredicate((string) $predicate);
 			if ($partition) {
 				$partitionPredicates[$partition->name][] = $predicate;
 			} else {
@@ -186,7 +190,7 @@ class PartitionedQueryBuilder extends QueryBuilder {
 	}
 
 
-	private function getPartitionForPredicate($predicate): ?PartitionDefinition {
+	private function getPartitionForPredicate(string $predicate): ?PartitionDefinition {
 		foreach ($this->partitions as $partition) {
 			if ($partition->checkPredicateForTable($predicate)) {
 				return $partition;
@@ -195,22 +199,29 @@ class PartitionedQueryBuilder extends QueryBuilder {
 		return null;
 	}
 
-	/**
-	 * Check if a query predicate mentions a table or alias
-	 *
-	 * @param $predicate
-	 * @param string $table
-	 * @return bool
-	 */
-	private function checkPredicateForTable($predicate, string $table): bool {
-		$table = preg_quote($table);
-		return preg_match("/(\W|^)$table\./", $predicate) === 1;
+	public function update($update = null, $alias = null) {
+		$this->isWrite = true;
+		return parent::update($update, $alias);
 	}
 
-	public function executeQuery(): IResult {
+	public function insert($insert = null) {
+		$this->isWrite = true;
+		return parent::insert($insert);
+	}
+
+	public function delete($delete = null, $alias = null) {
+		$this->isWrite = true;
+		return parent::delete($delete, $alias);
+	}
+
+	public function execute() {
 		$this->applySelects();
-		$result = parent::executeQuery();
-		return new PartitionedResult($this->splitQueries, $result);
+		$result = parent::execute();
+		if ($result instanceof IResult && count($this->splitQueries) > 0) {
+			return new PartitionedResult($this->splitQueries, $result);
+		} else {
+			return $result;
+		}
 	}
 
 	public function getSQL() {
