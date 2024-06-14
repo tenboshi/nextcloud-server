@@ -130,7 +130,7 @@ class PartitionedQueryBuilder extends QueryBuilder {
 		if ($condition === null) {
 			throw new InvalidPartitionedQueryException("Can't join on $join without a condition");
 		}
-		$condition = str_replace('`', '', $condition);
+		$condition = str_replace('`', '', (string) $condition);
 		// expect a condition in the form of 'alias1.column1 = alias2.column2'
 		if (substr_count($condition, ' ') > 2) {
 			throw new InvalidPartitionedQueryException("Can only join on $join with a single condition");
@@ -216,6 +216,9 @@ class PartitionedQueryBuilder extends QueryBuilder {
 
 	public function execute() {
 		$this->applySelects();
+		foreach ($this->splitQueries as $split) {
+			$split->query->setParameters($this->getParameters(), $this->getParameterTypes());
+		}
 		$result = parent::execute();
 		if ($result instanceof IResult && count($this->splitQueries) > 0) {
 			return new PartitionedResult($this->splitQueries, $result);
@@ -228,4 +231,12 @@ class PartitionedQueryBuilder extends QueryBuilder {
 		$this->applySelects();
 		return parent::getSQL();
 	}
-}
+		if ($this->isWrite) {
+			if (count($this->splitQueries)) {
+				throw new InvalidPartitionedQueryException("Partitioning write queries isn't supported");
+			}
+		} else {
+			$this->applySelects();
+			foreach ($this->splitQueries as $split) {
+				$split->query->setParameters($this->getParameters(), $this->getParameterTypes());
+			}

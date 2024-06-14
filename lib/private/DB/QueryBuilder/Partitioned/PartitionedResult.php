@@ -47,6 +47,7 @@ class PartitionedResult implements IResult {
 		if ($fetchMode !== PDO::FETCH_ASSOC) {
 			throw new InvalidPartitionedQueryException("Only FETCH_ASSOC is supported for partitioned queries");
 		}
+		$this->fetchRows();
 		return array_shift($this->rows);
 	}
 

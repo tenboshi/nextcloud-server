@@ -47,8 +47,7 @@ class PartitionDefinition {
 	 */
 	public function checkPredicateForTable(string $predicate): bool {
 		foreach ($this->getTablesAndAliases() as $name) {
-			$name = preg_quote($name);
-			if (preg_match("/(\W|^)$name\./", $predicate) === 1) {
+			if (str_contains($predicate, "`$name`.`")) {
 				return true;
 			}
 		}
