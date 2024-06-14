@@ -31,8 +31,8 @@ class PartitionQuery {
 
 	public function __construct(
 		public IQueryBuilder $query,
-		private string $joinFromColumn,
-		private string $joinToColumn,
+		public string $joinFromColumn,
+		public string $joinToColumn,
 		public string $joinMode,
 	) {
 		$this->query->select($joinFromColumn);

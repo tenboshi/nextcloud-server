@@ -55,6 +55,20 @@ class PartitionedQueryBuilder extends QueryBuilder {
 	}
 
 	private function applySelects(): void {
+		// ensure that all join columns are selected
+		foreach ($this->splitQueries as $split) {
+			$joinColumn = $split->joinToColumn;
+			if (str_contains($joinColumn, '.')) {
+				[, $joinColumn] = explode('.', $joinColumn);
+			}
+			foreach ($this->selects as $select) {
+				if ($select === $joinColumn || str_ends_with($select, '.' . $joinColumn)) {
+					continue 2;
+				}
+			}
+			$this->selects[] = $split->joinToColumn;
+		}
+
 		foreach ($this->selects as $select) {
 			foreach ($this->partitions as $partition) {
 				if (is_string($select) && $partition->isColumnInPartition($select)) {
