@@ -244,7 +244,7 @@ class IMipService {
 		}
 		// conclusion
 		if ($er->recurringConcludes()) {
-			$conclusion = $this->l10n->l('date', $er->recurringConcludesOn(), ['width' => 'medium']);
+			$conclusion = $this->l10n->l('date', $er->recurringConcludesOn(), ['width' => 'long']);
 		}
 		// generate localized when string
 		return match ([($interval > 1), !empty($start), !empty($conclusion)]) {
@@ -254,8 +254,8 @@ class IMipService {
 			[false, true, true] => $this->l10n->t('Every Day between %1$s - %2$s until %3$s', [$start, $end, $conclusion]),
 			[true, false, false] => $this->l10n->t('Every %1$d Days for the entire day', [$interval]),
 			[true, false, true] => $this->l10n->t('Every %1$d Days for the entire day until %2$s', [$interval, $conclusion]),
-			[true, true, false]  => $this->l10n->t('Every %1$d Days between %2$s - %3$s', [$interval, $start, $end]),
-			[true, true, true]  => $this->l10n->t('Every %1$d Days between %2$s - %3$s until %4$s', [$interval, $start, $end, $conclusion]),
+			[true, true, false] => $this->l10n->t('Every %1$d Days between %2$s - %3$s', [$interval, $start, $end]),
+			[true, true, true] => $this->l10n->t('Every %1$d Days between %2$s - %3$s until %4$s', [$interval, $start, $end, $conclusion]),
 			default => $this->l10n->t('Could not generate event recurrence statement')
 		};
 
@@ -286,7 +286,7 @@ class IMipService {
 		}
 		// conclusion
 		if ($er->recurringConcludes()) {
-			$conclusion = $this->l10n->l('date', $er->recurringConcludesOn(), ['width' => 'medium']);
+			$conclusion = $this->l10n->l('date', $er->recurringConcludesOn(), ['width' => 'long']);
 		}
 		// generate localized when string
 		return match ([($interval > 1), !empty($start), !empty($conclusion)]) {
@@ -296,8 +296,8 @@ class IMipService {
 			[false, true, true] => $this->l10n->t('Every Week on %1$s between %2$s - %3$s until %4$s', [$days, $start, $end, $conclusion]),
 			[true, false, false] => $this->l10n->t('Every %1$d Weeks on %2$s for the entire day', [$interval, $days]),
 			[true, false, true] => $this->l10n->t('Every %1$d Weeks on %2$s for the entire day until %3$s', [$interval, $days, $conclusion]),
-			[true, true, false]  => $this->l10n->t('Every %1$d Weeks on %2$s between %3$s - %4$s', [$interval, $days, $start, $end]),
-			[true, true, true]  => $this->l10n->t('Every %1$d Weeks on %2$s between %3$s - %4$s until %5$s', [$interval, $days, $start, $end, $conclusion]),
+			[true, true, false] => $this->l10n->t('Every %1$d Weeks on %2$s between %3$s - %4$s', [$interval, $days, $start, $end]),
+			[true, true, true] => $this->l10n->t('Every %1$d Weeks on %2$s between %3$s - %4$s until %5$s', [$interval, $days, $start, $end, $conclusion]),
 			default => $this->l10n->t('Could not generate event recurrence statement')
 		};
 
@@ -333,7 +333,7 @@ class IMipService {
 		}
 		// conclusion
 		if ($er->recurringConcludes()) {
-			$conclusion = $this->l10n->l('date', $er->recurringConcludesOn(), ['width' => 'medium']);
+			$conclusion = $this->l10n->l('date', $er->recurringConcludesOn(), ['width' => 'long']);
 		}
 		// generate localized when string
 		return match ([($interval > 1), !empty($start), !empty($conclusion)]) {
@@ -343,8 +343,8 @@ class IMipService {
 			[false, true, true] => $this->l10n->t('Every Month on the %1$s between %2$s - %3$s until %4$s', [$days, $start, $end, $conclusion]),
 			[true, false, false] => $this->l10n->t('Every %1$d Months on the %2$s for the entire day', [$interval, $days]),
 			[true, false, true] => $this->l10n->t('Every %1$d Months on the %2$s for the entire day until %3$s', [$interval, $days, $conclusion]),
-			[true, true, false]  => $this->l10n->t('Every %1$d Months on the %2$s between %3$s - %4$s', [$interval, $days, $start, $end]),
-			[true, true, true]  => $this->l10n->t('Every %1$d Months on the %2$s between %3$s - %4$s until %5$s', [$interval, $days, $start, $end, $conclusion]),
+			[true, true, false] => $this->l10n->t('Every %1$d Months on the %2$s between %3$s - %4$s', [$interval, $days, $start, $end]),
+			[true, true, true] => $this->l10n->t('Every %1$d Months on the %2$s between %3$s - %4$s until %5$s', [$interval, $days, $start, $end, $conclusion]),
 			default => $this->l10n->t('Could not generate event recurrence statement')
 		};
 	}
@@ -381,7 +381,7 @@ class IMipService {
 		}
 		// conclusion
 		if ($er->recurringConcludes()) {
-			$conclusion = $this->l10n->l('date', $er->recurringConcludesOn(), ['width' => 'medium']);
+			$conclusion = $this->l10n->l('date', $er->recurringConcludesOn(), ['width' => 'long']);
 		}
 		// generate localized when string
 		return match ([($interval > 1), !empty($start), !empty($conclusion)]) {
@@ -391,8 +391,8 @@ class IMipService {
 			[false, true, true] => $this->l10n->t('Every Year in %1$s on the %2$s between %3$s - %4$s until %5$s', [$months, $days, $start, $end, $conclusion]),
 			[true, false, false] => $this->l10n->t('Every %1$d Years in %2$s on the %3$s for the entire day', [$interval, $months, $days]),
 			[true, false, true] => $this->l10n->t('Every %1$d Years in %2$s on the %3$s for the entire day until %4$s', [$interval, $months,  $days, $conclusion]),
-			[true, true, false]  => $this->l10n->t('Every %1$d Years in %2$s on the %3$s between %4$s - %5$s', [$interval, $months, $days, $start, $end]),
-			[true, true, true]  => $this->l10n->t('Every %1$d Years in %2$s on the %3$s between %4$s - %5$s until %6$s', [$interval, $months, $days, $start, $end, $conclusion]),
+			[true, true, false] => $this->l10n->t('Every %1$d Years in %2$s on the %3$s between %4$s - %5$s', [$interval, $months, $days, $start, $end]),
+			[true, true, true] => $this->l10n->t('Every %1$d Years in %2$s on the %3$s between %4$s - %5$s until %6$s', [$interval, $months, $days, $start, $end, $conclusion]),
 			default => $this->l10n->t('Could not generate event recurrence statement')
 		};
 	}
@@ -408,26 +408,26 @@ class IMipService {
 	 */
 	public function generateOccurringString(EventReader $er): string {
 
-		// reset to initial occurance 
+		// reset to initial occurance
 		$er->recurrenceRewind();
 		// forward to current date
 		$er->recurrenceAdvanceTo((new \DateTime()));
 		// calculate time differnce from now to start of next event occurance and minimize it
 		$occuranceIn = $this->minimizeInterval((new \DateTime())->diff($er->recurrenceDate()));
 		// store next occurance value
-		$occurance = $this->l10n->l('date', $er->recurrenceDate());
+		$occurance = $this->l10n->l('date', $er->recurrenceDate(), ['width' => 'long']);
 		// forward one occurance
 		$er->recurrenceAdvance();
 		// evaluate if occurance is valid
 		if ($er->recurrenceDate() !== null) {
 			// store following occurance value
-			$occurance2 = $this->l10n->l('date', $er->recurrenceDate());
+			$occurance2 = $this->l10n->l('date', $er->recurrenceDate(), ['width' => 'long']);
 			// forward one occurance
 			$er->recurrenceAdvance();
 			// evaluate if occurance is valid
 			if ($er->recurrenceDate()) {
 				// store following occurance value
-				$occurance3 = $this->l10n->l('date', $er->recurrenceDate());
+				$occurance3 = $this->l10n->l('date', $er->recurrenceDate(), ['width' => 'long']);
 			}
 		}
 		// generate occurance string
