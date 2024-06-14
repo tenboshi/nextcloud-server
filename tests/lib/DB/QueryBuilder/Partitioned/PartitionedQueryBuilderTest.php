@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 namespace Test\DB\QueryBuilder\Partitioned;
 
+use OC\DB\QueryBuilder\Partitioned\PartitionDefinition;
 use OC\DB\QueryBuilder\Partitioned\PartitionedQueryBuilder;
 use OC\SystemConfig;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -51,6 +52,14 @@ class PartitionedQueryBuilderTest extends TestCase {
 		$fileId = $query->getLastInsertId();
 
 		$query = $this->connection->getQueryBuilder();
+		$query->insert('filecache_extended')
+			->values([
+				'fileid' => $query->createNamedParameter($fileId, IQueryBuilder::PARAM_INT),
+				'upload_time' => $query->createNamedParameter(1234, IQueryBuilder::PARAM_INT),
+			]);
+		$query->executeStatement();
+
+		$query = $this->connection->getQueryBuilder();
 		$query->insert('mounts')
 			->values([
 				'storage_id' => $query->createNamedParameter(1001001, IQueryBuilder::PARAM_INT),
@@ -69,6 +78,10 @@ class PartitionedQueryBuilderTest extends TestCase {
 		$query->executeStatement();
 
 		$query = $this->connection->getQueryBuilder();
+		$query->delete('filecache_extended');
+		$query->executeStatement();
+
+		$query = $this->connection->getQueryBuilder();
 		$query->delete('mounts')
 			->where($query->expr()->like('user_id', $query->createNamedParameter('partitioned_%')));
 		$query->executeStatement();
@@ -77,7 +90,7 @@ class PartitionedQueryBuilderTest extends TestCase {
 	public function testSimplePartitionedQuery() {
 		$this->setupFileCache();
 		$builder = $this->getQueryBuilder();
-		$builder->addSplitOfTable('filecache');
+		$builder->addPartition(new PartitionDefinition('filecache', ['filecache']));
 
 		// query borrowed from UserMountCache
 		$query = $builder->select('storage_id', 'root_id', 'user_id', 'mount_point', 'mount_id', 'f.path', 'mount_provider_class')
@@ -93,5 +106,27 @@ class PartitionedQueryBuilderTest extends TestCase {
 		$this->assertEquals($results[0]['mount_point'], '/mount/point');
 		$this->assertEquals($results[0]['mount_provider_class'], 'test');
 		$this->assertEquals($results[0]['path'], 'file1');
+	}
+
+	public function testMultiTablePartitionedQuery() {
+		$this->setupFileCache();
+		$builder = $this->getQueryBuilder();
+		$builder->addPartition(new PartitionDefinition('filecache', ['filecache', 'filecache_extended']));
+
+		$query = $builder->select('storage_id', 'root_id', 'user_id', 'mount_point', 'mount_id', 'f.path', 'mount_provider_class', 'fe.upload_time')
+			->from('mounts', 'm')
+			->innerJoin('m', 'filecache', 'f', $builder->expr()->eq('m.root_id', 'f.fileid'))
+			->innerJoin('f', 'filecache_extended', 'fe', $builder->expr()->eq('f.fileid', 'fe.fileid'))
+			->where($builder->expr()->eq('storage_id', $builder->createPositionalParameter(1001001, IQueryBuilder::PARAM_INT)));
+
+		$query->andWhere($builder->expr()->eq('user_id', $builder->createPositionalParameter('partitioned_test')));
+
+		$results = $query->executeQuery()->fetchAll();
+		$this->assertCount(1, $results);
+		$this->assertEquals($results[0]['user_id'], 'partitioned_test');
+		$this->assertEquals($results[0]['mount_point'], '/mount/point');
+		$this->assertEquals($results[0]['mount_provider_class'], 'test');
+		$this->assertEquals($results[0]['path'], 'file1');
+		$this->assertEquals($results[0]['upload_time'], 1234);
 	}
 }

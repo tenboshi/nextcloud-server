@@ -25,23 +25,17 @@ namespace OC\DB\QueryBuilder\Partitioned;
 
 use OCP\DB\QueryBuilder\IQueryBuilder;
 
-class SplitPartition {
+class PartitionQuery {
 	const JOIN_MODE_INNER = 'inner';
 	const JOIN_MODE_LEFT = 'left';
 
-	private string $joinFromColumn;
-	private string $joinToColumn;
-
 	public function __construct(
 		public IQueryBuilder $query,
-		string $joinFromColumn,
-		string $joinToColumn,
+		private string $joinFromColumn,
+		private string $joinToColumn,
 		public string $joinMode,
 	) {
 		$this->query->select($joinFromColumn);
-		// strip table/alias from column names
-		$this->joinFromColumn = preg_replace('/\w+\./', '', $joinFromColumn);
-		$this->joinToColumn = preg_replace('/\w+\./', '', $joinToColumn);
 	}
 
 	/**
@@ -50,20 +44,24 @@ class SplitPartition {
 	 * @throws \OCP\DB\Exception
 	 */
 	public function mergeWith(array $rows): array {
-		$joinToValues = array_map(function (array $row) {
-			return $row[$this->joinToColumn];
+		// strip table/alias from column names
+		$joinFromColumn = preg_replace('/\w+\./', '', $this->joinFromColumn);
+		$joinToColumn = preg_replace('/\w+\./', '', $this->joinToColumn);
+
+		$joinToValues = array_map(function (array $row) use ($joinToColumn) {
+			return $row[$joinToColumn];
 		}, $rows);
 		$this->query->andWhere($this->query->expr()->in($this->joinFromColumn, $this->query->createNamedParameter($joinToValues, IQueryBuilder::PARAM_STR_ARRAY)));
 
 		$partitionedRows = $this->query->executeQuery()->fetchAll();
 		$partitionedRowsByKey = [];
 		foreach ($partitionedRows as $partitionedRow) {
-			$partitionedRowsByKey[$partitionedRow[$this->joinFromColumn]] = $partitionedRow;
+			$partitionedRowsByKey[$partitionedRow[$joinFromColumn]] = $partitionedRow;
 		}
 		$result = [];
 		foreach ($rows as $row) {
-			if (isset($partitionedRowsByKey[$row[$this->joinToColumn]])) {
-				$result[] = array_merge($row, $partitionedRowsByKey[$row[$this->joinToColumn]]);
+			if (isset($partitionedRowsByKey[$row[$joinToColumn]])) {
+				$result[] = array_merge($row, $partitionedRowsByKey[$row[$joinToColumn]]);
 			} elseif ($this->joinMode === self::JOIN_MODE_LEFT) {
 				$result[] = $row;
 			}

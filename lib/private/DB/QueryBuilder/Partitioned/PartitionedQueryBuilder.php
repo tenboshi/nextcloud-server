@@ -27,10 +27,11 @@ use OC\DB\QueryBuilder\QueryBuilder;
 use OCP\DB\IResult;
 
 class PartitionedQueryBuilder extends QueryBuilder {
-	/** @var SplitPartition[] $splitOfParts */
-	private array $splitOfParts = [];
-	private array $splitOfTables = [];
-	private array $splitOfAliases = [];
+	/** @var array<string, PartitionQuery> $splitQueries */
+	private array $splitQueries = [];
+	/** @var list<PartitionDefinition> */
+	private array $partitions = [];
+
 	/** @var string[] */
 	private array $selects = [];
 	/** @var array{'column' => string, 'alias' => string}[] */
@@ -55,9 +56,9 @@ class PartitionedQueryBuilder extends QueryBuilder {
 
 	private function applySelects(): void {
 		foreach ($this->selects as $select) {
-			foreach ($this->splitOfParts as $alias => $part) {
-				if (str_starts_with($select, "$alias.")) {
-					$part->query->addSelect($select);
+			foreach ($this->partitions as $partition) {
+				if ($partition->isColumnInPartition($select)) {
+					$this->splitQueries[$partition->name]->query->addSelect($select);
 					continue 2;
 				}
 			}
@@ -65,9 +66,9 @@ class PartitionedQueryBuilder extends QueryBuilder {
 		}
 		$this->selects = [];
 		foreach ($this->selectAliases as $select) {
-			foreach ($this->splitOfParts as $alias => $part) {
-				if (str_starts_with($select['select'], "$alias.")) {
-					$part->query->selectAlias($select['select'], $select['alias']);
+			foreach ($this->partitions as $partition) {
+				if ($partition->isColumnInPartition($select['select'])) {
+					$this->splitQueries[$partition->name]->query->selectAlias($select['select'], $select['alias']);
 					continue 2;
 				}
 			}
@@ -76,20 +77,38 @@ class PartitionedQueryBuilder extends QueryBuilder {
 		$this->selectAliases = [];
 	}
 
-	public function addSplitOfTable(string $table): void {
-		$this->splitOfTables[] = $table;
+	public function addPartition(PartitionDefinition $partition): void {
+		$this->partitions[] = $partition;
 	}
 
-	public function innerJoin($fromAlias, $join, $alias, $condition = null) {
-		if (in_array($join, $this->splitOfTables)) {
+	private function getPartition(string $table): ?PartitionDefinition {
+		foreach ($this->partitions as $partition) {
+			if ($partition->containsTable($table)) {
+				return $partition;
+			}
+		}
+		return null;
+	}
+
+	public function innerJoin($fromAlias, $join, $alias, $condition = null): self {
+		if ($partition = $this->getPartition($join)) {
 			['from' => $joinFrom, 'to' => $joinTo] = $this->splitJoinCondition($condition, $join, $alias);
-			$this->splitOfAliases[$alias] = $join;
-			$this->splitOfParts[$alias] = new SplitPartition(
-				$this->getConnection()->getQueryBuilder(),
-				$joinFrom, $joinTo,
-				SplitPartition::JOIN_MODE_INNER
-			);
-			$this->splitOfParts[$alias]->query->from($join, $alias);
+			$partition->addAlias($join, $alias);
+			if (!isset($this->splitQueries[$partition->name])) {
+				$this->splitQueries[$partition->name] = new PartitionQuery(
+					$this->getConnection()->getQueryBuilder(),
+					$joinFrom, $joinTo,
+					PartitionQuery::JOIN_MODE_INNER
+				);
+				$this->splitQueries[$partition->name]->query->from($join, $alias);
+			} else {
+				$query = $this->splitQueries[$partition->name]->query;
+				if ($partition->containsAlias($fromAlias)) {
+					$query->innerJoin($fromAlias, $join, $alias, $condition);
+				} else {
+					throw new InvalidPartitionedQueryException("Can't join across partition boundaries more than once");
+				}
+			}
 			return $this;
 		} else {
 			return parent::innerJoin($fromAlias, $join, $alias, $condition);
@@ -134,9 +153,9 @@ class PartitionedQueryBuilder extends QueryBuilder {
 	private function splitPredicatesByParts(array $predicates): array {
 		$partitionPredicates = [];
 		foreach ($predicates as $predicate) {
-			$partitionAlias = $this->getPartitionForPredicate($predicate);
-			if ($partitionAlias) {
-				$partitionPredicates[$partitionAlias][] = $predicate;
+			$partition = $this->getPartitionForPredicate($predicate);
+			if ($partition) {
+				$partitionPredicates[$partition->name][] = $predicate;
 			} else {
 				$partitionPredicates[''][] = $predicate;
 			}
@@ -149,7 +168,7 @@ class PartitionedQueryBuilder extends QueryBuilder {
 			if ($alias === '') {
 				parent::where(...$predicates);
 			} else {
-				$this->splitOfParts[$alias]->query->where(...$predicates);
+				$this->splitQueries[$alias]->query->where(...$predicates);
 			}
 		}
 		return $this;
@@ -160,17 +179,17 @@ class PartitionedQueryBuilder extends QueryBuilder {
 			if ($alias === '') {
 				parent::andWhere(...$predicates);
 			} else {
-				$this->splitOfParts[$alias]->query->andWhere(...$predicates);
+				$this->splitQueries[$alias]->query->andWhere(...$predicates);
 			}
 		}
 		return $this;
 	}
 
 
-	private function getPartitionForPredicate($predicate): ?string {
-		foreach ($this->splitOfAliases as $alias => $table) {
-			if ($this->checkPredicateForTable($predicate, $alias)) {
-				return $alias;
+	private function getPartitionForPredicate($predicate): ?PartitionDefinition {
+		foreach ($this->partitions as $partition) {
+			if ($partition->checkPredicateForTable($predicate)) {
+				return $partition;
 			}
 		}
 		return null;
@@ -191,7 +210,7 @@ class PartitionedQueryBuilder extends QueryBuilder {
 	public function executeQuery(): IResult {
 		$this->applySelects();
 		$result = parent::executeQuery();
-		return new PartitionedResult($this->splitOfParts, $result);
+		return new PartitionedResult($this->splitQueries, $result);
 	}
 
 	public function getSQL() {

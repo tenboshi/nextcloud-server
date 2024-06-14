@@ -30,7 +30,7 @@ class PartitionedResult implements IResult {
 	private ?array $rows = null;
 
 	/**
-	 * @param SplitPartition[] $splitOfParts
+	 * @param PartitionQuery[] $splitOfParts
 	 * @param IResult $result
 	 */
 	public function __construct(
