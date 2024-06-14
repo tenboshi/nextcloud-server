@@ -39,16 +39,18 @@ class EventReaderRRule extends \Sabre\VObject\Recur\RRuleIterator {
 		if (isset($this->until)) {
 			return \DateTime::createFromImmutable($this->until);
 		} elseif ($this->count > 0) {
-			// temporarly store current reccurance date
+			// temporarly store current reccurance date and counter
 			$currentReccuranceDate = $this->currentDate;
+			$currentCounter = $this->counter;
 			// iterate over occurances until last one (subtract 2 from count for start and end occurance)
 			while ($this->counter <= ($this->count - 2)) {
 				$this->next();
 			}
 			// temporarly store last reccurance date
 			$lastReccuranceDate = $this->currentDate;
-			// restore current reccurance date
+			// restore current reccurance date and counter
 			$this->currentDate = $currentReccuranceDate;
+			$this->counter = $currentCounter;
 			// return last recurrance date
 			return \DateTime::createFromImmutable($lastReccuranceDate);
 		} else {

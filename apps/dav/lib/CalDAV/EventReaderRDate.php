@@ -38,9 +38,9 @@ class EventReaderRDate extends \Sabre\VObject\Recur\RDateIterator {
 	public function concludesOn(): \DateTime | null {
 		if (count($this->dates) > 0) {
 			return new \DateTime(
-                $this->dates[array_key_last($this->dates)],
-                $this->startDate->getTimezone()
-            );
+				$this->dates[array_key_last($this->dates)],
+				$this->startDate->getTimezone()
+			);
 		} else {
 			return null;
 		}

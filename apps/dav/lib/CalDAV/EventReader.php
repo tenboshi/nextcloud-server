@@ -57,8 +57,9 @@ class EventReader {
 		1 => 'January', 2 => 'February', 3 => 'March', 4 => 'April', 5 => 'May', 6 => 'June',
 		7 => 'July', 8 => 'August', 9 => 'September', 10 => 'October', 11 => 'November', 12 => 'December'
 	];
-	protected array $relativeWeeksOfMonthMap = [
-		1 => 'First', 2 => 'Second', 3 => 'Third', 4 => 'Fourth', 5 => 'Fifty', -1 => 'Last', -2 => 'Second Last'
+	protected array $relativePositionNamesMap = [
+		1 => 'First', 2 => 'Second', 3 => 'Third', 4 => 'Fourth', 5 => 'Fifty',
+		-1 => 'Last', -2 => 'Second Last', -3 => 'Third Last', 4 => 'Fourth Last', 5 => 'Fifty Last'
 	];
 
 	/**
@@ -342,7 +343,7 @@ class EventReader {
 
 	/**
 	 * event recurrance conclusion
-	 * 
+	 *
 	 * returns true if RRULE with UNTIL or COUNT (calculated) is used
 	 * returns true RDATE is used
 	 * returns false if RRULE or RDATE are absent, or RRRULE is infinite
@@ -355,13 +356,13 @@ class EventReader {
 
 		// retrieve rrule conclusions
 		if (isset($this->rruleIterator) && (
-			!empty($this->rruleIterator->concludesOn()) || 
+			!empty($this->rruleIterator->concludesOn()) ||
 			!empty($this->rruleIterator->concludesAfter())
 		)) {
 			return true;
 		}
 		// retrieve rdate conclusions
-		if (isset($this->rdateIterator) && 
+		if (isset($this->rdateIterator) &&
 			$this->rdateIterator->concludesAfter()
 		) {
 			return true;
@@ -373,7 +374,7 @@ class EventReader {
 
 	/**
 	 * event recurrance conclusion iterations
-	 * 
+	 *
 	 * returns the COUNT value if RRULE is used
 	 * returns the collection count if RDATE is used
 	 * returns combined count of RRULE COUNT and RDATE if both are used
@@ -398,7 +399,7 @@ class EventReader {
 
 	/**
 	 * event recurrance conclusion date
-	 * 
+	 *
 	 * returns the last date of UNTIL or COUNT (calculated) if RRULE is used
 	 * returns the last date in the collection if RDATE is used
 	 * returns the highest date if both RRULE and RDATE are used
@@ -439,7 +440,7 @@ class EventReader {
 
 	/**
 	 * event recurrance days of the week
-	 * 
+	 *
 	 * returns collection of RRULE BYDAY day(s) ['MO','WE','FR']
 	 * returns blank collection if RRULE is absent, RDATE presents or absents has no affect
 	 *
@@ -454,7 +455,7 @@ class EventReader {
 
 	/**
 	 * event recurrance days of the week (named)
-	 * 
+	 *
 	 * returns collection of RRULE BYDAY day(s) ['Monday','Wednesday','Friday']
 	 * returns blank collection if RRULE is absent, RDATE presents or absents has no affect
 	 *
@@ -479,7 +480,7 @@ class EventReader {
 
 	/**
 	 * event recurrance days of the month
-	 * 
+	 *
 	 * returns collection of RRULE BYMONTHDAY day(s) [7, 15, 31]
 	 * returns blank collection if RRULE is absent, RDATE presents or absents has no affect
 	 *
@@ -494,7 +495,7 @@ class EventReader {
 
 	/**
 	 * event recurrance days of the year
-	 * 
+	 *
 	 * returns collection of RRULE BYYEARDAY day(s) [57, 205, 365]
 	 * returns blank collection if RRULE is absent, RDATE presents or absents has no affect
 	 *
@@ -509,7 +510,7 @@ class EventReader {
 
 	/**
 	 * event recurrance weeks of the month
-	 * 
+	 *
 	 * returns collection of RRULE SETPOS weeks(s) [1, 3, -1]
 	 * returns blank collection if RRULE is absent or SETPOS is absent, RDATE presents or absents has no affect
 	 *
@@ -524,7 +525,7 @@ class EventReader {
 
 	/**
 	 * event recurrance weeks of the month (named)
-	 * 
+	 *
 	 * returns collection of RRULE SETPOS weeks(s) [1, 3, -1]
 	 * returns blank collection if RRULE is absent or SETPOS is absent, RDATE presents or absents has no affect
 	 *
@@ -539,7 +540,7 @@ class EventReader {
 		if (is_array($days)) {
 			// convert numberic relative position to relative label
 			foreach ($days as $key => $value) {
-				$days[$key] = $this->relativeWeeksOfMonthMap[$value];
+				$days[$key] = $this->relativePositionNamesMap[$value];
 			}
 			return $days;
 		}
@@ -549,7 +550,7 @@ class EventReader {
 
 	/**
 	 * event recurrance weeks of the year
-	 * 
+	 *
 	 * returns collection of RRULE BYWEEKNO weeks(s) [12, 32, 52]
 	 * returns blank collection if RRULE is absent, RDATE presents or absents has no affect
 	 *
@@ -564,7 +565,7 @@ class EventReader {
 
 	/**
 	 * event recurrance months of the year
-	 * 
+	 *
 	 * returns collection of RRULE BYMONTH month(s) [3, 7, 12]
 	 * returns blank collection if RRULE is absent, RDATE presents or absents has no affect
 	 *
@@ -579,7 +580,7 @@ class EventReader {
 
 	/**
 	 * event recurrance months of the year (named)
-	 * 
+	 *
 	 * returns collection of RRULE BYMONTH month(s) [3, 7, 12]
 	 * returns blank collection if RRULE is absent, RDATE presents or absents has no affect
 	 *
@@ -604,7 +605,7 @@ class EventReader {
 
 	/**
 	 * event recurrance relative positions
-	 * 
+	 *
 	 * returns collection of RRULE SETPOS value(s) [1, 5, -3]
 	 * returns blank collection if RRULE is absent, RDATE presents or absents has no affect
 	 *
@@ -618,8 +619,33 @@ class EventReader {
 	}
 
 	/**
+	 * event recurrance relative positions (named)
+	 *
+	 * returns collection of RRULE SETPOS [1, 3, -1]
+	 * returns blank collection if RRULE is absent or SETPOS is absent, RDATE presents or absents has no affect
+	 *
+	 * @since 30.0.0
+	 *
+	 * @return array
+	 */
+	public function recurringRelativePositionNamed(): array {
+		// evaluate if RRULE exists and extract relative position(s)
+		$positions = (isset($this->rruleIterator) && $this->rruleIterator->isRelative()) ? $this->rruleIterator->relativePosition() : [];
+		// evaluate if relative position is set
+		if (is_array($positions)) {
+			// convert numberic relative position to relative label
+			foreach ($positions as $key => $value) {
+				$positions[$key] = $this->relativePositionNamesMap[$value];
+			}
+			return $positions;
+		}
+		// return empty array if evaluation failed
+		return [];
+	}
+
+	/**
 	 * event recurrance date
-	 * 
+	 *
 	 * returns date of currently selected recurrance
 	 *
 	 * @since 30.0.0
@@ -636,7 +662,7 @@ class EventReader {
 
 	/**
 	 * event recurrance rewind
-	 * 
+	 *
 	 * sets the current recurrance to the first recurrance in the collection
 	 *
 	 * @since 30.0.0
@@ -666,7 +692,7 @@ class EventReader {
 
 	/**
 	 * event recurrance advance
-	 * 
+	 *
 	 * sets the current recurrance to the next recurrance in the collection
 	 *
 	 * @since 30.0.0
@@ -740,13 +766,13 @@ class EventReader {
 
 	/**
 	 * event recurrance advance
-	 * 
+	 *
 	 * sets the current recurrance to the next recurrance in the collection after the specific date
 	 *
 	 * @since 30.0.0
 	 *
 	 * @param DateTimeInterface $dt			date and time to advance
-	 * 
+	 *
 	 * @return void
 	 */
 	public function recurrenceAdvanceTo(DateTimeInterface $dt): void {
