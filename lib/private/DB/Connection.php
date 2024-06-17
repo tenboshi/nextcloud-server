@@ -21,9 +21,10 @@ use Doctrine\DBAL\Platforms\SqlitePlatform;
 use Doctrine\DBAL\Result;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\DBAL\Statement;
-use OC\DB\QueryBuilder\Partitioned\PartitionDefinition;
+use OC\DB\QueryBuilder\Partitioned\PartitionSplit;
 use OC\DB\QueryBuilder\Partitioned\PartitionedQueryBuilder;
 use OC\DB\QueryBuilder\QueryBuilder;
+use OC\DB\QueryBuilder\Sharded\ShardDefinition;
 use OC\SystemConfig;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\Diagnostics\IEventLogger;
@@ -73,6 +74,8 @@ class Connection extends PrimaryReadReplicaConnection {
 
 	/** @var array<string, list<string>> */
 	protected array $partitions;
+	/** @var ShardDefinition[] */
+	protected array $shards = [];
 
 	/**
 	 * Initializes a new instance of the Connection class.
@@ -172,10 +175,11 @@ class Connection extends PrimaryReadReplicaConnection {
 			$builder = new PartitionedQueryBuilder(
 				new ConnectionAdapter($this),
 				$this->systemConfig,
-				$this->logger
+				$this->logger,
+				$this->shards,
 			);
 			foreach ($this->partitions as $name => $tables) {
-				$partition = new PartitionDefinition($name, $tables);
+				$partition = new PartitionSplit($name, $tables);
 				$builder->addPartition($partition);
 			}
 			return $builder;
