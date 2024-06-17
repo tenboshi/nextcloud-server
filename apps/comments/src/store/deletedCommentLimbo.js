@@ -12,12 +12,10 @@ export const useDeletedCommentLimbo = defineStore('deletedCommentLimbo', {
 	}),
 	actions: {
 		addId(id) {
-			console.log('ADDING ID TO LIMBO', id, this.idsInLimbo)
 			this.idsInLimbo.push(id)
 		},
 
 		removeId(id) {
-			console.log('REMOVING ID FROM LIMBO', id, this.idsInLimbo)
 			const index = this.idsInLimbo.indexOf(id)
 			if (index > -1) {
 				this.idsInLimbo.splice(index, 1)
@@ -25,7 +23,7 @@ export const useDeletedCommentLimbo = defineStore('deletedCommentLimbo', {
 		},
 
 		checkForId(id) {
-			this.idsInLimbo.includes(id)
+			return this.idsInLimbo.includes(id)
 		}
 	},
 })

@@ -230,8 +230,6 @@ export default {
 		},
 
 		isLimbo() {
-			console.log('checking for limbo', this.id)
-
 			return this.deletedCommentLimboStore.checkForId(this.id)
 		},
 	},

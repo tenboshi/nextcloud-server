@@ -70,8 +70,6 @@ export default {
 
 		// DELETION
 		onDeleteWithUndo() {
-			console.log('DELETE WITH UNDO')
-			this.$emit('delete')
 			this.deleted = true
 			this.deletedCommentLimboStore.addId(this.id)
 			const timeOutDelete = setTimeout(this.onDelete, TOAST_UNDO_TIMEOUT)
