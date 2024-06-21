@@ -1126,29 +1126,9 @@ class Manager implements IManager {
 			return;
 		}
 
-		// If the user has another shares, we don't delete the shares by this user
-		if ($share->getShareType() === IShare::TYPE_USER) {
-			$groupShares = $this->getSharedWith($share->getSharedWith(), IShare::TYPE_GROUP, $node, -1, 0);
-
-			if (count($groupShares) !== 0) {
-				return;
-			}
-
-			// Check shares of parent folders
-			try {
-				$parentNode = $node->getParent();
-				while ($parentNode) {
-					$groupShares = $this->getSharedWith($share->getSharedWith(), IShare::TYPE_GROUP, $parentNode, -1, 0);
-					$userShares = $this->getSharedWith($share->getSharedWith(), IShare::TYPE_USER, $parentNode, -1, 0);
-
-					if (count($groupShares) !== 0 || count($userShares) !== 0) {
-						return;
-					}
-
-					$parentNode = $parentNode->getParent();
-				}
-			} catch (NotFoundException) {
-			}
+		// If the sharedWith user/group has another shares, we don't delete the shares by this user/group
+		if  ($this->hasAnotherShares($share->getSharedWith(), $node, [$share->getId()])) {
+			return;
 		}
 
 		// Delete re-share records (shared by "share with user") inside folder
@@ -1157,6 +1137,9 @@ class Manager implements IManager {
 
 			foreach ($sharesInFolder as $shares) {
 				foreach ($shares as $child) {
+					if ($this->hasAnotherShares($share->getSharedWith(), $child->getNode(), [$share->getId()])) {
+						continue;
+					}
 					$this->deleteShare($child);
 				}
 			}
@@ -1176,6 +1159,9 @@ class Manager implements IManager {
 				$provider = $this->factory->getProviderForType($shareType);
 				$shares = $provider->getSharesBy($share->getSharedWith(), $shareType, $node, false, -1, 0);
 				foreach ($shares as $child) {
+					if ($this->hasAnotherShares($share->getSharedWith(), $child->getNode(), [$share->getId()])) {
+						continue;
+					}
 					$this->deleteShare($child);
 				}
 			}
@@ -1187,15 +1173,13 @@ class Manager implements IManager {
 			$users = $group->getUsers();
 
 			foreach ($users as $user) {
+				// Skip if share owner is member of shared group
 				if ($user->getUID() === $share->getShareOwner()) {
 					continue;
 				}
 
-				$anotherShares = $this->getSharedWith($user->getUID(), IShare::TYPE_USER, $node, -1, 0);
-				$groupShares = $this->getSharedWith($user->getUID(), IShare::TYPE_GROUP, $node, -1, 0);
-
 				// If the user has another shares, we don't delete the shares by this user
-				if (count($anotherShares) !== 0 || count($groupShares) > 1) {
+				if ($this->hasAnotherShares($user->getUID(), $node, [$share->getId()])) {
 					continue;
 				}
 
@@ -1204,20 +1188,79 @@ class Manager implements IManager {
 
 					foreach ($sharesInFolder as $shares) {
 						foreach ($shares as $child) {
-							$this->deleteShare($child);
-						}
-					}
-				} else {
-					foreach ($shareTypes as $shareType) {
-						$provider = $this->factory->getProviderForType($shareType);
-						$shares = $provider->getSharesBy($user->getUID(), $shareType, $node, false, -1, 0);
-						foreach ($shares as $child) {
+							if ($this->hasAnotherShares($user->getUID(), $child->getNode(), [$share->getId()])) {
+								continue;
+							}
 							$this->deleteShare($child);
 						}
 					}
 				}
+
+				foreach ($shareTypes as $shareType) {
+					$provider = $this->factory->getProviderForType($shareType);
+					$shares = $provider->getSharesBy($user->getUID(), $shareType, $node, false, -1, 0);
+					foreach ($shares as $child) {
+						$this->deleteShare($child);
+					}
+				}
 			}
 		}
+	}
+
+	public function hasAnotherShares($userId, Node $node, $exceptShareIds = []) {
+		$shares = [];
+
+		$groupShares = $this->getSharedWith($userId, IShare::TYPE_GROUP, $node, -1, 0);
+		foreach ($groupShares as $share) {
+			if (!in_array($share->getId(), $exceptShareIds)) {
+				$shares[] = $share;
+			}
+		}
+		if (count($shares)) {
+			return true;
+		}
+
+		$userShares = $this->getSharedWith($userId, IShare::TYPE_USER, $node, -1, 0);
+		foreach ($userShares as $share) {
+			if (!in_array($share->getId(), $exceptShareIds)) {
+				$shares[] = $share;
+			}
+		}
+		if (count($shares)) {
+			return true;
+		}
+
+		// Check shares of parent folders
+		try {
+			$parentNode = $node->getParent();
+			while ($parentNode) {
+				$groupShares = $this->getSharedWith($userId, IShare::TYPE_GROUP, $parentNode, -1, 0);
+				foreach ($groupShares as $share) {
+					if (!in_array($share->getId(), $exceptShareIds)) {
+						$shares[] = $share;
+					}
+				}
+				if (count($shares)) {
+					return true;
+				}
+
+				$userShares = $this->getSharedWith($userId, IShare::TYPE_USER, $parentNode, -1, 0);
+				foreach ($userShares as $share) {
+					if (!in_array($share->getId(), $exceptShareIds)) {
+						$shares[] = $share;
+					}
+				}
+				if (count($shares)) {
+					return true;
+				}
+
+				$parentNode = $parentNode->getParent();
+			}
+		} catch (NotFoundException) {
+			return false;
+		}
+
+		return false;
 	}
 
 	/**

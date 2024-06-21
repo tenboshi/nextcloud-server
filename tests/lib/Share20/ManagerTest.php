@@ -473,8 +473,9 @@ class ManagerTest extends \Test\TestCase {
 
 	public function testDeleteReshareWhenUserHasOneShare() {
 		$manager = $this->createManagerMock()
-			->setMethods(['deleteShare', 'getSharesInFolder', 'getSharedWith'])
+			->setMethods(['deleteShare', 'getSharesInFolder', 'getSharedWith', 'hasAnotherShares'])
 			->getMock();
+		$manager->method('hasAnotherShares')->willReturn(false);
 
 		$folder = $this->createMock(Folder::class);
 		$folder->method('getParent')->willReturn(null);
@@ -487,6 +488,7 @@ class ManagerTest extends \Test\TestCase {
 
 		$reShare = $this->createMock(IShare::class);
 		$reShare->method('getSharedBy')->willReturn('UserB');
+		$reShare->method('getNode')->willReturn($folder);
 
 		$reShareInSubFolder = $this->createMock(IShare::class);
 		$reShareInSubFolder->method('getSharedBy')->willReturn('UserB');
@@ -504,8 +506,9 @@ class ManagerTest extends \Test\TestCase {
 
 	public function testDeleteReshareWhenUserHasAnotherShare() {
 		$manager = $this->createManagerMock()
-			->setMethods(['deleteShare', 'getSharesInFolder', 'getSharedWith'])
+			->setMethods(['deleteShare', 'getSharesInFolder', 'getSharedWith', 'hasAnotherShares'])
 			->getMock();
+		$manager->method('hasAnotherShares')->willReturn(true);
 
 		$folder = $this->createMock(Folder::class);
 		$folder->method('getParent')->willReturn(null);
@@ -547,6 +550,7 @@ class ManagerTest extends \Test\TestCase {
 		$share->method('getNodeType')->willReturn('folder');
 		$share->method('getSharedWith')->willReturn('UserB');
 		$share->method('getNode')->willReturn($folder);
+		$share->method('getId')->willReturn(1);
 
 		$reShare = $this->createMock(IShare::class);
 		$reShare->method('getShareType')->willReturn(IShare::TYPE_USER);
@@ -554,7 +558,10 @@ class ManagerTest extends \Test\TestCase {
 		$reShare->method('getSharedBy')->willReturn('UserB');
 		$reShare->method('getNode')->willReturn($folder);
 
-		$manager->expects($this->exactly(3))->method('getSharedWith')->willReturnOnConsecutiveCalls([], [1], []);
+		$shareOfParent = $this->createMock(IShare::class);
+		$shareOfParent->method('getId')->willReturn(2);
+
+		$manager->expects($this->exactly(3))->method('getSharedWith')->willReturnOnConsecutiveCalls([], [], [$shareOfParent]);
 		$manager->method('getSharesInFolder')->willReturn([]);
 
 		$this->defaultProvider->method('getSharesBy')
@@ -605,6 +612,9 @@ class ManagerTest extends \Test\TestCase {
 		$group = $this->createMock(IGroup::class);
 		$group->method('getUsers')->willReturn([$userB, $userC]);
 		$this->groupManager->method('get')->with('Group')->willReturn($group);
+
+		$this->defaultProvider->method('getSharesBy')
+			->willReturn([]);
 
 		$manager->method('getSharedWith')->willReturn([]);
 		$manager->expects($this->exactly(2))->method('getSharesInFolder')->willReturnOnConsecutiveCalls([[$reShare1]], [[$reShare2]]);
