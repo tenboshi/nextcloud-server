@@ -10,6 +10,7 @@ namespace OCA\DAV\CalDAV\Schedule;
 
 use OC\URLGenerator;
 use OCA\DAV\CalDAV\EventReader;
+use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IConfig;
 use OCP\IDBConnection;
 use OCP\IL10N;
@@ -32,6 +33,7 @@ class IMipService {
 	private ISecureRandom $random;
 	private L10NFactory $l10nFactory;
 	private IL10N $l10n;
+	private ITimeFactory $timeFactory;
 
 	/** @var string[] */
 	private const STRING_DIFF = [
@@ -45,7 +47,8 @@ class IMipService {
 		IConfig $config,
 		IDBConnection $db,
 		ISecureRandom $random,
-		L10NFactory $l10nFactory) {
+		L10NFactory $l10nFactory,
+		ITimeFactory $timeFactory) {
 		$this->urlGenerator = $urlGenerator;
 		$this->config = $config;
 		$this->db = $db;
@@ -53,6 +56,7 @@ class IMipService {
 		$this->l10nFactory = $l10nFactory;
 		$default = $this->l10nFactory->findGenericLanguage();
 		$this->l10n = $this->l10nFactory->get('dav', $default);
+		$this->timeFactory = $timeFactory;
 	}
 
 	/**
@@ -182,22 +186,19 @@ class IMipService {
 	 */
 	public function generateWhenStringSingular(EventReader $er): string {
 		// calculate time differnce from now to start of event
-		$occuring = $this->minimizeInterval((new \DateTime())->diff($er->startDateTime()));
+		$occuring = $this->minimizeInterval($this->timeFactory->getDateTime()->diff($er->recurrenceDate()));
 		// extract start date
 		$startDate = $this->l10n->l('date', $er->startDateTime(), ['width' => 'full']);
 		// time of the day
 		if (!$er->entireDay()) {
 			$startTime = $this->l10n->l('time', $er->startDateTime(), ['width' => 'short']) . (($er->startTimeZone() != $er->endTimeZone()) ? ' (' . $er->startTimeZone()->getName() . ')': '');
 			$endTime = $this->l10n->l('time', $er->endDateTime(), ['width' => 'short']) . ' (' . $er->endTimeZone()->getName() . ')';
-		} else {
-			$startTime = $this->l10n->l('time', $er->startDateTime(), ['width' => 'short']);
-			$endTime = '';
 		}
 		// generate localized when string
 		return match ([($occuring[0] > 1), !empty($endTime)]) {
 			[false, false] => $this->l10n->t('In a %1$s on %2$s for the entire day', [$occuring[1], $startDate]),
 			[false, true] => $this->l10n->t('In a %1$s on %2$s between %3$s - %4$s', [$occuring[1], $startDate, $startTime, $endTime]),
-			[true, false] => $this->l10n->t('In %1$s %2$s on %3$s for the entire day', [$occuring[0], $occuring[1], $startDate, $startTime]),
+			[true, false] => $this->l10n->t('In %1$s %2$s on %3$s for the entire day', [$occuring[0], $occuring[1], $startDate]),
 			[true, true] => $this->l10n->t('In %1$s %2$s on %3$s between %4$s - %5$s', [$occuring[0], $occuring[1], $startDate, $startTime, $endTime]),
 			default => $this->l10n->t('Could not generate when statement')
 		};
@@ -234,28 +235,28 @@ class IMipService {
 		
 		// initialize
 		$interval = (int) $er->recurringInterval();
-		$start = '';
-		$end = '';
+		$startTime = '';
+		$endTime = '';
 		$conclusion = '';
 		// time of the day
 		if (!$er->entireDay()) {
-			$start = $this->l10n->l('time', $er->startDateTime(), ['width' => 'short']) . (($er->startTimeZone() != $er->endTimeZone()) ? ' (' . $er->startTimeZone()->getName() . ')': '');
-			$end = $this->l10n->l('time', $er->endDateTime(), ['width' => 'short']) . ' (' . $er->endTimeZone()->getName() . ')';
+			$startTime = $this->l10n->l('time', $er->startDateTime(), ['width' => 'short']) . (($er->startTimeZone() != $er->endTimeZone()) ? ' (' . $er->startTimeZone()->getName() . ')': '');
+			$endTime = $this->l10n->l('time', $er->endDateTime(), ['width' => 'short']) . ' (' . $er->endTimeZone()->getName() . ')';
 		}
 		// conclusion
 		if ($er->recurringConcludes()) {
 			$conclusion = $this->l10n->l('date', $er->recurringConcludesOn(), ['width' => 'long']);
 		}
 		// generate localized when string
-		return match ([($interval > 1), !empty($start), !empty($conclusion)]) {
+		return match ([($interval > 1), !empty($startTime), !empty($conclusion)]) {
 			[false, false, false] => $this->l10n->t('Every Day for the entire day'),
 			[false, false, true] => $this->l10n->t('Every Day for the entire day until %1$s', [$conclusion]),
-			[false, true, false] => $this->l10n->t('Every Day between %1$s - %2$s', [$start, $end]),
-			[false, true, true] => $this->l10n->t('Every Day between %1$s - %2$s until %3$s', [$start, $end, $conclusion]),
+			[false, true, false] => $this->l10n->t('Every Day between %1$s - %2$s', [$startTime, $endTime]),
+			[false, true, true] => $this->l10n->t('Every Day between %1$s - %2$s until %3$s', [$startTime, $endTime, $conclusion]),
 			[true, false, false] => $this->l10n->t('Every %1$d Days for the entire day', [$interval]),
 			[true, false, true] => $this->l10n->t('Every %1$d Days for the entire day until %2$s', [$interval, $conclusion]),
-			[true, true, false] => $this->l10n->t('Every %1$d Days between %2$s - %3$s', [$interval, $start, $end]),
-			[true, true, true] => $this->l10n->t('Every %1$d Days between %2$s - %3$s until %4$s', [$interval, $start, $end, $conclusion]),
+			[true, true, false] => $this->l10n->t('Every %1$d Days between %2$s - %3$s', [$interval, $startTime, $endTime]),
+			[true, true, true] => $this->l10n->t('Every %1$d Days between %2$s - %3$s until %4$s', [$interval, $startTime, $endTime, $conclusion]),
 			default => $this->l10n->t('Could not generate event recurrence statement')
 		};
 
@@ -274,30 +275,30 @@ class IMipService {
 		
 		// initialize
 		$interval = (int) $er->recurringInterval();
-		$start = '';
-		$end = '';
+		$startTime = '';
+		$endTime = '';
 		$conclusion = '';
 		// days of the week
 		$days = implode(', ', array_map(function ($value) { return $this->l10n->t($value); }, $er->recurringDaysOfWeekNamed()));
 		// time of the day
 		if (!$er->entireDay()) {
-			$start = $this->l10n->l('time', $er->startDateTime(), ['width' => 'short']) . (($er->startTimeZone() != $er->endTimeZone()) ? ' (' . $er->startTimeZone()->getName() . ')': '');
-			$end = $this->l10n->l('time', $er->endDateTime(), ['width' => 'short']) . ' (' . $er->endTimeZone()->getName() . ')';
+			$startTime = $this->l10n->l('time', $er->startDateTime(), ['width' => 'short']) . (($er->startTimeZone() != $er->endTimeZone()) ? ' (' . $er->startTimeZone()->getName() . ')': '');
+			$endTime = $this->l10n->l('time', $er->endDateTime(), ['width' => 'short']) . ' (' . $er->endTimeZone()->getName() . ')';
 		}
 		// conclusion
 		if ($er->recurringConcludes()) {
 			$conclusion = $this->l10n->l('date', $er->recurringConcludesOn(), ['width' => 'long']);
 		}
 		// generate localized when string
-		return match ([($interval > 1), !empty($start), !empty($conclusion)]) {
-			[false, false, false] => $this->l10n->t('Every Week on %1$s for the entire day', $days),
+		return match ([($interval > 1), !empty($startTime), !empty($conclusion)]) {
+			[false, false, false] => $this->l10n->t('Every Week on %1$s for the entire day', [$days]),
 			[false, false, true] => $this->l10n->t('Every Week on %1$s for the entire day until %2$s', [$days, $conclusion]),
-			[false, true, false] => $this->l10n->t('Every Week on %1$s between %2$s - %3$s', [$days, $start, $end]),
-			[false, true, true] => $this->l10n->t('Every Week on %1$s between %2$s - %3$s until %4$s', [$days, $start, $end, $conclusion]),
+			[false, true, false] => $this->l10n->t('Every Week on %1$s between %2$s - %3$s', [$days, $startTime, $endTime]),
+			[false, true, true] => $this->l10n->t('Every Week on %1$s between %2$s - %3$s until %4$s', [$days, $startTime, $endTime, $conclusion]),
 			[true, false, false] => $this->l10n->t('Every %1$d Weeks on %2$s for the entire day', [$interval, $days]),
 			[true, false, true] => $this->l10n->t('Every %1$d Weeks on %2$s for the entire day until %3$s', [$interval, $days, $conclusion]),
-			[true, true, false] => $this->l10n->t('Every %1$d Weeks on %2$s between %3$s - %4$s', [$interval, $days, $start, $end]),
-			[true, true, true] => $this->l10n->t('Every %1$d Weeks on %2$s between %3$s - %4$s until %5$s', [$interval, $days, $start, $end, $conclusion]),
+			[true, true, false] => $this->l10n->t('Every %1$d Weeks on %2$s between %3$s - %4$s', [$interval, $days, $startTime, $endTime]),
+			[true, true, true] => $this->l10n->t('Every %1$d Weeks on %2$s between %3$s - %4$s until %5$s', [$interval, $days, $startTime, $endTime, $conclusion]),
 			default => $this->l10n->t('Could not generate event recurrence statement')
 		};
 
@@ -316,8 +317,8 @@ class IMipService {
 		
 		// initialize
 		$interval = (int) $er->recurringInterval();
-		$start = '';
-		$end = '';
+		$startTime = '';
+		$endTime = '';
 		$conclusion = '';
 		// days of month
 		if ($er->recurringPattern() === 'R') {
@@ -328,23 +329,23 @@ class IMipService {
 		}
 		// time of the day
 		if (!$er->entireDay()) {
-			$start = $this->l10n->l('time', $er->startDateTime(), ['width' => 'short']) . (($er->startTimeZone() != $er->endTimeZone()) ? ' (' . $er->startTimeZone()->getName() . ')': '');
-			$end = $this->l10n->l('time', $er->endDateTime(), ['width' => 'short']) . ' (' . $er->endTimeZone()->getName() . ')';
+			$startTime = $this->l10n->l('time', $er->startDateTime(), ['width' => 'short']) . (($er->startTimeZone() != $er->endTimeZone()) ? ' (' . $er->startTimeZone()->getName() . ')': '');
+			$endTime = $this->l10n->l('time', $er->endDateTime(), ['width' => 'short']) . ' (' . $er->endTimeZone()->getName() . ')';
 		}
 		// conclusion
 		if ($er->recurringConcludes()) {
 			$conclusion = $this->l10n->l('date', $er->recurringConcludesOn(), ['width' => 'long']);
 		}
 		// generate localized when string
-		return match ([($interval > 1), !empty($start), !empty($conclusion)]) {
-			[false, false, false] => $this->l10n->t('Every Month on the %1$s for the entire day', $days),
+		return match ([($interval > 1), !empty($startTime), !empty($conclusion)]) {
+			[false, false, false] => $this->l10n->t('Every Month on the %1$s for the entire day', [$days]),
 			[false, false, true] => $this->l10n->t('Every Month on the %1$s for the entire day until %2$s', [$days, $conclusion]),
-			[false, true, false] => $this->l10n->t('Every Month on the %1$s between %2$s - %3$s', [$days, $start, $end]),
-			[false, true, true] => $this->l10n->t('Every Month on the %1$s between %2$s - %3$s until %4$s', [$days, $start, $end, $conclusion]),
+			[false, true, false] => $this->l10n->t('Every Month on the %1$s between %2$s - %3$s', [$days, $startTime, $endTime]),
+			[false, true, true] => $this->l10n->t('Every Month on the %1$s between %2$s - %3$s until %4$s', [$days, $startTime, $endTime, $conclusion]),
 			[true, false, false] => $this->l10n->t('Every %1$d Months on the %2$s for the entire day', [$interval, $days]),
 			[true, false, true] => $this->l10n->t('Every %1$d Months on the %2$s for the entire day until %3$s', [$interval, $days, $conclusion]),
-			[true, true, false] => $this->l10n->t('Every %1$d Months on the %2$s between %3$s - %4$s', [$interval, $days, $start, $end]),
-			[true, true, true] => $this->l10n->t('Every %1$d Months on the %2$s between %3$s - %4$s until %5$s', [$interval, $days, $start, $end, $conclusion]),
+			[true, true, false] => $this->l10n->t('Every %1$d Months on the %2$s between %3$s - %4$s', [$interval, $days, $startTime, $endTime]),
+			[true, true, true] => $this->l10n->t('Every %1$d Months on the %2$s between %3$s - %4$s until %5$s', [$interval, $days, $startTime, $endTime, $conclusion]),
 			default => $this->l10n->t('Could not generate event recurrence statement')
 		};
 	}
@@ -362,8 +363,8 @@ class IMipService {
 		
 		// initialize
 		$interval = (int) $er->recurringInterval();
-		$start = '';
-		$end = '';
+		$startTime = '';
+		$endTime = '';
 		$conclusion = '';
 		// months of year
 		$months = implode(', ', array_map(function ($value) { return $this->l10n->t($value); }, $er->recurringMonthsOfYearNamed()));
@@ -376,23 +377,23 @@ class IMipService {
 		}
 		// time of the day
 		if (!$er->entireDay()) {
-			$start = $this->l10n->l('time', $er->startDateTime(), ['width' => 'short']) . (($er->startTimeZone() != $er->endTimeZone()) ? ' (' . $er->startTimeZone()->getName() . ')': '');
-			$end = $this->l10n->l('time', $er->endDateTime(), ['width' => 'short']) . ' (' . $er->endTimeZone()->getName() . ')';
+			$startTime = $this->l10n->l('time', $er->startDateTime(), ['width' => 'short']) . (($er->startTimeZone() != $er->endTimeZone()) ? ' (' . $er->startTimeZone()->getName() . ')': '');
+			$endTime = $this->l10n->l('time', $er->endDateTime(), ['width' => 'short']) . ' (' . $er->endTimeZone()->getName() . ')';
 		}
 		// conclusion
 		if ($er->recurringConcludes()) {
 			$conclusion = $this->l10n->l('date', $er->recurringConcludesOn(), ['width' => 'long']);
 		}
 		// generate localized when string
-		return match ([($interval > 1), !empty($start), !empty($conclusion)]) {
+		return match ([($interval > 1), !empty($startTime), !empty($conclusion)]) {
 			[false, false, false] => $this->l10n->t('Every Year in %1$s on the %2$s for the entire day', [$months, $days]),
 			[false, false, true] => $this->l10n->t('Every Year in %1$s on the %2$s for the entire day until %3$s', [$months, $days, $conclusion]),
-			[false, true, false] => $this->l10n->t('Every Year in %1$s on the %2$s between %3$s - %3$s', [$months, $days, $start, $end]),
-			[false, true, true] => $this->l10n->t('Every Year in %1$s on the %2$s between %3$s - %4$s until %5$s', [$months, $days, $start, $end, $conclusion]),
+			[false, true, false] => $this->l10n->t('Every Year in %1$s on the %2$s between %3$s - %4$s', [$months, $days, $startTime, $endTime]),
+			[false, true, true] => $this->l10n->t('Every Year in %1$s on the %2$s between %3$s - %4$s until %5$s', [$months, $days, $startTime, $endTime, $conclusion]),
 			[true, false, false] => $this->l10n->t('Every %1$d Years in %2$s on the %3$s for the entire day', [$interval, $months, $days]),
 			[true, false, true] => $this->l10n->t('Every %1$d Years in %2$s on the %3$s for the entire day until %4$s', [$interval, $months,  $days, $conclusion]),
-			[true, true, false] => $this->l10n->t('Every %1$d Years in %2$s on the %3$s between %4$s - %5$s', [$interval, $months, $days, $start, $end]),
-			[true, true, true] => $this->l10n->t('Every %1$d Years in %2$s on the %3$s between %4$s - %5$s until %6$s', [$interval, $months, $days, $start, $end, $conclusion]),
+			[true, true, false] => $this->l10n->t('Every %1$d Years in %2$s on the %3$s between %4$s - %5$s', [$interval, $months, $days, $startTime, $endTime]),
+			[true, true, true] => $this->l10n->t('Every %1$d Years in %2$s on the %3$s between %4$s - %5$s until %6$s', [$interval, $months, $days, $startTime, $endTime, $conclusion]),
 			default => $this->l10n->t('Could not generate event recurrence statement')
 		};
 	}
@@ -411,9 +412,9 @@ class IMipService {
 		// reset to initial occurance
 		$er->recurrenceRewind();
 		// forward to current date
-		$er->recurrenceAdvanceTo((new \DateTime()));
+		$er->recurrenceAdvanceTo($this->timeFactory->getDateTime());
 		// calculate time differnce from now to start of next event occurance and minimize it
-		$occuranceIn = $this->minimizeInterval((new \DateTime())->diff($er->recurrenceDate()));
+		$occuranceIn = $this->minimizeInterval($this->timeFactory->getDateTime()->diff($er->recurrenceDate()));
 		// store next occurance value
 		$occurance = $this->l10n->l('date', $er->recurrenceDate(), ['width' => 'long']);
 		// forward one occurance
@@ -433,8 +434,8 @@ class IMipService {
 		// generate occurance string
 		return match ([($occuranceIn[0] > 1), !empty($occurance2), !empty($occurance3)]) {
 			[false, false, false] => $this->l10n->t('In a %1$s on %2$s', [$occuranceIn[1], $occurance]),
-			[false, true, false] => $this->l10n->t('In a %1$s on %2$s then on %2$s', [$occuranceIn[1], $occurance, $occurance2]),
-			[false, true, true] => $this->l10n->t('In a %1$s on %2$s then on %2$s and %2$s', [$occuranceIn[1], $occurance, $occurance2, $occurance3]),
+			[false, true, false] => $this->l10n->t('In a %1$s on %2$s then on %3$s', [$occuranceIn[1], $occurance, $occurance2]),
+			[false, true, true] => $this->l10n->t('In a %1$s on %2$s then on %3$s and %4$s', [$occuranceIn[1], $occurance, $occurance2, $occurance3]),
 			[true, false, false] => $this->l10n->t('In %1$s %2$s on %3$s', [$occuranceIn[0], $occuranceIn[1], $occurance]),
 			[true, true, false] => $this->l10n->t('In %1$s %2$s on %3$s then on %4$s', [$occuranceIn[0], $occuranceIn[1], $occurance, $occurance2]),
 			[true, true, true] => $this->l10n->t('In %1$s %2$s on %3$s then on %4$s and %5$s', [$occuranceIn[0], $occuranceIn[1], $occurance, $occurance2, $occurance3]),
@@ -870,7 +871,7 @@ class IMipService {
 	public function minimizeInterval(\DateInterval $dateInterval): array {
 		// evaluate if time interval is in the past
 		if ($dateInterval->invert == 1) {
-			return 'the past';
+			return [1, 'the past'];
 		}
 		// evaluate interval parts and return smallest time period
 		if ($dateInterval->y > 0) {
