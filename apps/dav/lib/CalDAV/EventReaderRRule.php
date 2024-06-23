@@ -59,7 +59,7 @@ class EventReaderRRule extends \Sabre\VObject\Recur\RRuleIterator {
 	}
 
 	public function concludesAfter(): int | null {
-		return isset($this->count) ? $this->count : null;
+		return !empty($this->count) ? $this->count : null;
 	}
 
 	public function concludesOn(): \DateTime | null {

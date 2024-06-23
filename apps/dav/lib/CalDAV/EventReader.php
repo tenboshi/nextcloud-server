@@ -40,12 +40,13 @@ class EventReader {
 	protected DateTimeInterface $baseEventEndDate;
 	protected DateTimeZone $baseEventEndTimeZone;
 	protected bool $baseEventStartDateFloating = false;
-	protected int $basebaseEventDuration;
+	protected bool $baseEventEndDateFloating = false;
+	protected int $baseEventDuration;
 
-	protected EventReaderRRule $rruleIterator;
-	protected EventReaderRDate $rdateIterator;
-	protected EventReaderRRule $eruleIterator;
-	protected EventReaderRDate $edateIterator;
+	protected ?EventReaderRRule $rruleIterator = null;
+	protected ?EventReaderRDate $rdateIterator = null;
+	protected ?EventReaderRRule $eruleIterator = null;
+	protected ?EventReaderRDate $edateIterator = null;
 
 	protected array $recurrenceModified;
 	protected ?DateTimeInterface $recurrenceCurrentDate;
@@ -59,7 +60,7 @@ class EventReader {
 	];
 	protected array $relativePositionNamesMap = [
 		1 => 'First', 2 => 'Second', 3 => 'Third', 4 => 'Fourth', 5 => 'Fifty',
-		-1 => 'Last', -2 => 'Second Last', -3 => 'Third Last', 4 => 'Fourth Last', 5 => 'Fifty Last'
+		-1 => 'Last', -2 => 'Second Last', -3 => 'Third Last', -4 => 'Fourth Last', -5 => 'Fifty Last'
 	];
 
 	/**
@@ -88,27 +89,28 @@ class EventReader {
 		if (is_string($input)) {
 			$input = \Sabre\VObject\Reader::read($input);
 		}
-		
 		// evaluate if input is a single event vobject and convert it to a collection
 		if ($input instanceof VEvent) {
 			$events = [$input];
-			// evaluate if input is a calendar vobject
-		} elseif ($input instanceof VCalendar) {
+		}
+		// evaluate if input is a calendar vobject
+		elseif ($input instanceof VCalendar) {
 			// Calendar + UID mode.
 			if (!isset($uid)) {
-				throw new InvalidArgumentException('The UID argument is required when a VCALENDAR object is used');
+				throw new \InvalidArgumentException('The UID argument is required when a VCALENDAR object is used');
 			}
 			// extract events from calendar
 			$events = $input->getByUID($uid);
 			// evaluate if any event where found
 			if (count($events) === 0) {
-				throw new InvalidArgumentException('This VCALENDAR did not have an event with UID: '.$uid);
+				throw new \InvalidArgumentException('This VCALENDAR did not have an event with UID: '.$uid);
 			}
-			// evaluate if input is a collection of event vobjects
-		} elseif (is_array($input)) {
+		}
+		// evaluate if input is a collection of event vobjects
+		elseif (is_array($input)) {
 			$events = $input;
 		} else {
-			throw new InvalidArgumentException('Invalid input data type');
+			throw new \InvalidArgumentException('Invalid input data type');
 		}
 		// find base event instance and remove it from events collection
 		foreach ($events as $key => $vevent) {
@@ -138,9 +140,9 @@ class EventReader {
 		elseif (isset($this->baseEvent->DTSTART->parameters['TZID'])) {
 			$this->baseEventStartTimeZone = new DateTimeZone($this->baseEvent->DTSTART->parameters['TZID']->getValue());
 		}
-		// evaluate if event calendar wrapper has a time zone
-		elseif (isset($input->VTIMEZONE[0]) && isset($input->VTIMEZONE[0]->TZID)) {
-			$this->baseEventStartTimeZone = new DateTimeZone($input->VTIMEZONE[0]->TZID->getValue());
+		// evaluate if event parent calendar has a time zone
+		elseif (isset($this->baseEvent->parent->VTIMEZONE) && isset($this->baseEvent->parent->VTIMEZONE->TZID)) {
+			$this->baseEventStartTimeZone = new DateTimeZone($this->baseEvent->parent->VTIMEZONE->TZID->getValue());
 		}
 		// otherwise, as a last resort use the UTC timezone
 		else {
@@ -157,18 +159,17 @@ class EventReader {
 		elseif (isset($this->baseEvent->DTEND->parameters['TZID'])) {
 			$this->baseEventEndTimeZone = new DateTimeZone($this->baseEvent->DTEND->parameters['TZID']->getValue());
 		}
-		// evaluate if event calendar wrapper has a time zone
-		elseif (isset($input->VTIMEZONE[0]) && isset($input->VTIMEZONE[0]->TZID)) {
-			$this->baseEventEndTimeZone = new DateTimeZone($input->VTIMEZONE[0]->TZID->getValue());
+		// evaluate if event parent calendar has a time zone
+		elseif (isset($this->baseEvent->parent->VTIMEZONE) && isset($this->baseEvent->parent->VTIMEZONE->TZID)) {
+			$this->baseEventEndTimeZone = new DateTimeZone($this->baseEvent->parent->VTIMEZONE->TZID->getValue());
 		}
 		// otherwise, as a last resort use the start date time zone
 		else {
 			$this->baseEventEndTimeZone = clone $this->baseEventStartTimeZone;
 		}
-
+		// extract start date and time
 		$this->baseEventStartDate = $this->baseEvent->DTSTART->getDateTime($this->baseEventStartTimeZone);
 		$this->baseEventStartDateFloating = $this->baseEvent->DTSTART->isFloating();
-
 		// determain event end date and duration
 		// evaluate if end date exists
 		// extract end date and calculate duration
@@ -197,25 +198,28 @@ class EventReader {
 			$this->baseEventDuration = 0;
 			$this->baseEventEndDate = $this->baseEventStartDate;
 		}
-
+		// evaluate if RRULE exist and construct iterator
 		if (isset($this->baseEvent->RRULE)) {
 			$this->rruleIterator = new EventReaderRRule(
 				$this->baseEvent->RRULE->getParts(),
 				$this->baseEventStartDate
 			);
 		}
+		// evaluate if RDATE exist and construct iterator
 		if (isset($this->baseEvent->RDATE)) {
 			$this->rdateIterator = new EventReaderRDate(
 				$this->baseEvent->RDATE->getValue(),
 				$this->baseEventStartDate
 			);
 		}
+		// evaluate if EXRULE exist and construct iterator
 		if (isset($this->baseEvent->EXRULE)) {
 			$this->eruleIterator = new EventReaderRRule(
 				$this->baseEvent->EXRULE->getParts(),
 				$this->baseEventStartDate
 			);
 		}
+		// evaluate if EXDATE exist and construct iterator
 		if (isset($this->baseEvent->EXDATE)) {
 			$this->edateIterator = new EventReaderRDate(
 				$this->baseEvent->EXDATE->getValue(),
@@ -224,7 +228,7 @@ class EventReader {
 		}
 		// construct collection of modified events with recurrance id as hash
 		foreach ($events as $vevent) {
-			$this->recurringAltered[$vevent->{'RECURRENCE-ID'}->getDateTime($this->baseEventTimeZone)->getTimeStamp()] = $vevent;
+			$this->recurrenceModified[$vevent->{'RECURRENCE-ID'}->getDateTime($this->baseEventStartTimeZone)->getTimeStamp()] = $vevent;
 		}
 		
 		$this->recurrenceCurrentDate = clone $this->baseEventStartDate;
@@ -389,9 +393,9 @@ class EventReader {
 		// construct count place holder
 		$count = 0;
 		// retrieve and add RRULE iterations count
-		$count += isset($this->rruleIterator) ? $this->rruleIterator->concludesAfter() : null;
+		$count += isset($this->rruleIterator) ? (int) $this->rruleIterator->concludesAfter() : 0;
 		// retrieve and add RDATE iterations count
-		$count += isset($this->rdateIterator) ? $this->rdateIterator->concludesAfter() : null;
+		$count += isset($this->rdateIterator) ? (int) $this->rdateIterator->concludesAfter() : 0;
 		// return count
 		return !empty($count) ? $count : null;
 
@@ -465,7 +469,7 @@ class EventReader {
 	 */
 	public function recurringDaysOfWeekNamed(): array {
 		// evaluate if RRULE exists and extract day(s) of the week
-		$days = isset($this->rruleIterator) ? $this->rruleIterator->daysOfWeek() : [];
+		$days = isset($this->rruleIterator) ? $this->rruleIterator->daysOfWeek() : null;
 		// evaluate if months array is set
 		if (is_array($days)) {
 			// convert numberic month to month name
@@ -535,7 +539,7 @@ class EventReader {
 	 */
 	public function recurringWeeksOfMonthNamed(): array {
 		// evaluate if RRULE exists and extract relative position(s)
-		$days = (isset($this->rruleIterator) && $this->rruleIterator->isRelative()) ? $this->rruleIterator->relativePosition() : [];
+		$days = (isset($this->rruleIterator) && $this->rruleIterator->isRelative()) ? $this->rruleIterator->relativePosition() : null;
 		// evaluate if relative position is set
 		if (is_array($days)) {
 			// convert numberic relative position to relative label
@@ -630,7 +634,7 @@ class EventReader {
 	 */
 	public function recurringRelativePositionNamed(): array {
 		// evaluate if RRULE exists and extract relative position(s)
-		$positions = (isset($this->rruleIterator) && $this->rruleIterator->isRelative()) ? $this->rruleIterator->relativePosition() : [];
+		$positions = (isset($this->rruleIterator) && $this->rruleIterator->isRelative()) ? $this->rruleIterator->relativePosition() : null;
 		// evaluate if relative position is set
 		if (is_array($positions)) {
 			// convert numberic relative position to relative label
@@ -755,8 +759,8 @@ class EventReader {
 		} elseif (isset($edateDate)) {
 			$nextExceptionDate = $edateDate;
 		}
-		// if the nextDate is part of exrule or exdate find another date
-		if (isset($nextOccurrenceDate) && isset($nextExceptionDate) && $nextOccurrenceDate == $this->nextExceptionDate) {
+		// if the next date is part of exrule or exdate find another date
+		if (isset($nextOccurrenceDate) && isset($nextExceptionDate) && $nextOccurrenceDate == $nextExceptionDate) {
 			$this->recurrenceCurrentDate = $nextOccurrenceDate;
 			$this->recurrenceAdvance();
 		} else {
