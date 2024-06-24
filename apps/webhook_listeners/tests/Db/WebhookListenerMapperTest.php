@@ -58,6 +58,7 @@ class WebhookListenerMapperTest extends TestCase {
 			UserCreatedEvent::class,
 			null,
 			null,
+			null,
 			AuthMethod::None,
 			null,
 		);
@@ -70,6 +71,7 @@ class WebhookListenerMapperTest extends TestCase {
 			'POST',
 			'https://webhook.example.com/endpoint',
 			NodeWrittenEvent::class,
+			null,
 			null,
 			null,
 			AuthMethod::None,
@@ -89,6 +91,7 @@ class WebhookListenerMapperTest extends TestCase {
 			'POST',
 			'https://webhook.example.com/endpoint',
 			NodeWrittenEvent::class,
+			null,
 			null,
 			null,
 			AuthMethod::Header,

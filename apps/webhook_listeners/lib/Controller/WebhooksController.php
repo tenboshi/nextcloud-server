@@ -121,6 +121,7 @@ class WebhooksController extends OCSController {
 		string $uri,
 		string $event,
 		?array $eventFilter,
+		?string $userIdFilter,
 		?array $headers,
 		?string $authMethod,
 		#[\SensitiveParameter]
@@ -145,6 +146,7 @@ class WebhooksController extends OCSController {
 				$uri,
 				$event,
 				$eventFilter,
+				$userIdFilter,
 				$headers,
 				$authMethod,
 				$authData,
@@ -188,6 +190,7 @@ class WebhooksController extends OCSController {
 		string $uri,
 		string $event,
 		?array $eventFilter,
+		?string $userIdFilter,
 		?array $headers,
 		?string $authMethod,
 		#[\SensitiveParameter]
@@ -213,6 +216,7 @@ class WebhooksController extends OCSController {
 				$uri,
 				$event,
 				$eventFilter,
+				$userIdFilter,
 				$headers,
 				$authMethod,
 				$authData,
