@@ -20,7 +20,7 @@ class EventReaderRRule extends \Sabre\VObject\Recur\RRuleIterator {
 	}
 
 	public function concludes(): \DateTime | null {
-		if (isset($this->until)) {
+		if ($this->until instanceof \DateTimeInterface) {
 			return \DateTime::createFromInterface($this->until);
 		} elseif ($this->count > 0) {
 			// temporarly store current reccurance date and counter
