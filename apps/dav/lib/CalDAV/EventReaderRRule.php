@@ -32,7 +32,7 @@ class EventReaderRRule extends \Sabre\VObject\Recur\RRuleIterator {
 			}
 			// temporarly store last reccurance date
 			$lastReccuranceDate = $this->currentDate;
-			// restore current reccurance date and counter
+			// restore current recurrence date and counter
 			$this->currentDate = $currentReccuranceDate;
 			$this->counter = $currentCounter;
 			// return last recurrence date
