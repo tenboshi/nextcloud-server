@@ -75,6 +75,9 @@
                             "type": "object"
                         }
                     },
+                    "userIdFilter": {
+                        "type": "string"
+                    },
                     "headers": {
                         "type": "object",
                         "additionalProperties": {
@@ -206,6 +209,15 @@
                         "name": "eventFilter",
                         "in": "query",
                         "description": "Mongo filter to apply to the serialized data to decide if firing",
+                        "schema": {
+                            "type": "string",
+                            "nullable": true
+                        }
+                    },
+                    {
+                        "name": "userIdFilter",
+                        "in": "query",
+                        "description": "User id to filter on. The webhook will only be called by requests from this user. Empty or null means no filtering.",
                         "schema": {
                             "type": "string",
                             "nullable": true
@@ -489,6 +501,15 @@
                         "name": "eventFilter",
                         "in": "query",
                         "description": "Mongo filter to apply to the serialized data to decide if firing",
+                        "schema": {
+                            "type": "string",
+                            "nullable": true
+                        }
+                    },
+                    {
+                        "name": "userIdFilter",
+                        "in": "query",
+                        "description": "User id to filter on. The webhook will only be called by requests from this user. Empty or null means no filtering.",
                         "schema": {
                             "type": "string",
                             "nullable": true
