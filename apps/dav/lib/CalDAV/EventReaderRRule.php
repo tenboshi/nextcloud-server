@@ -23,7 +23,7 @@ class EventReaderRRule extends \Sabre\VObject\Recur\RRuleIterator {
 		if ($this->until instanceof \DateTimeInterface) {
 			return \DateTime::createFromInterface($this->until);
 		} elseif ($this->count > 0) {
-			// temporarly store current reccurance date and counter
+			// temporarily store current recurrence date and counter
 			$currentReccuranceDate = $this->currentDate;
 			$currentCounter = $this->counter;
 			// iterate over occurances until last one (subtract 2 from count for start and end occurance)
