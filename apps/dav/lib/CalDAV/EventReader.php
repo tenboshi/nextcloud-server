@@ -50,7 +50,7 @@ class EventReader {
 	/**
 	 * Initilizes the Event Reader
 	 *
-	 * There's three ways to set up the iterator.
+	 * There is several ways to set up the iterator.
 	 *
 	 * 1. You can pass a VCALENDAR component (as object or string) and a UID.
 	 * 2. You can pass an array of VEVENTs (all UIDS should match).
