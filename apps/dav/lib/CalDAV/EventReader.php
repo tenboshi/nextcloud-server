@@ -67,7 +67,7 @@ class EventReader {
 	 * @param string|null     				$uid
 	 * @param DateTimeZone    				$timeZone reference timezone for floating dates and times
 	 */
-	public function __construct(VCalendar|VEvent|array|String $input, ?string $uid = null, ?DateTimeZone $timeZone = null) {
+	public function __construct(VCalendar|VEvent|array|string $input, ?string $uid = null, ?DateTimeZone $timeZone = null) {
 
 		// evaluate if the input is a string and convert it to and vobject if required
 		if (is_string($input)) {
