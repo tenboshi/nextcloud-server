@@ -65,7 +65,7 @@ class EventReader {
 	 *
 	 * @param VCalendar|VEvent|Array|String $input
 	 * @param string|null     				$uid
-	 * @param DateTimeZone    				$timeZone reference timezone for floating dates and times
+	 * @param DateTimeZone|null    				$timeZone reference timezone for floating dates and times
 	 */
 	public function __construct(VCalendar|VEvent|array|string $input, ?string $uid = null, ?DateTimeZone $timeZone = null) {
 
