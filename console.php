@@ -68,8 +68,16 @@ try {
 	}
 
 	$application = \OCP\Server::get(Application::class);
-	$application->loadCommands(new ArgvInput(), new ConsoleOutput());
-	$application->run();
+	$argv = $_SERVER['argv'];
+	if (($key = array_search('--debug', $argv)) !== false) {
+		// Remove --debug option if it was passed
+		unset($argv[$key]);
+		$argv = array_values($argv);
+	}
+
+	$input = new ArgvInput($argv);
+	$application->loadCommands($input, new ConsoleOutput());
+	$application->run($input);
 } catch (Exception $ex) {
 	exceptionHandler($ex);
 } catch (Error $ex) {
