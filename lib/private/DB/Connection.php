@@ -118,7 +118,14 @@ class Connection extends PrimaryReadReplicaConnection {
 			$this->_config->setSQLLogger($debugStack);
 		}
 
-		$this->partitions = $this->systemConfig->getValue('db.partitions', []);
+		// todo: only allow specific, pre-defined shard configurations, the current config exists for easy testing setup
+		$shardConfig = $this->systemConfig->getValue('db.sharding', []);
+		$this->shards = array_map(function(array $config) {
+			return new ShardDefinition($config['table'], $config['primary_key'], $config['shard_key'], $config['companion_tables']);
+		}, $shardConfig);
+		$this->partitions = array_map(function(ShardDefinition $shard) {
+			return array_merge([$shard->table], $shard->companionTables);
+		}, $this->shards);
 
 		$this->setNestTransactionsWithSavepoints(true);
 	}
