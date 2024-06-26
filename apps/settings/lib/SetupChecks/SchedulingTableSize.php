@@ -14,7 +14,7 @@ use OCP\SetupCheck\ISetupCheck;
 use OCP\SetupCheck\SetupResult;
 
 class SchedulingTableSize implements ISetupCheck {
-	const MAX_SCHEDULING_ENTRIES = 50000;
+	public const MAX_SCHEDULING_ENTRIES = 50000;
 
 	public function __construct(
 		private IL10N $l10n,
