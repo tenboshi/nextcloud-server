@@ -259,10 +259,13 @@ class IMipPlugin extends SabreIMipPlugin {
 		$itip_msg = $iTipMessage->message->serialize();
 
 		try {
-			// load mail provider manager
-			$mailManager = \OC::$server->get(MailManager::class);
-			// retrieve all services
-			$mailService = $mailManager->findServiceByAddress($this->userSession->getUser()->getUID(), $sender);
+			// evaluate if user object exists
+			if ($this->userSession->getUser() !== null) {
+				// load mail provider manager
+				$mailManager = \OC::$server->get(MailManager::class);
+				// retrieve all services
+				$mailService = $mailManager->findServiceByAddress($this->userSession->getUser()->getUID(), $sender);
+			}
 			// evaluate if a mail service was found and has sending capabilities
 			if ($mailService !== null && $mailService instanceof IMessageSend) {
 				// construct mail provider message and set required parameters
