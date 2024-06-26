@@ -19,6 +19,8 @@ class ShardedQueryBuilder extends QueryBuilder {
 	private mixed $shardKey = null;
 	private mixed $primaryKey = null;
 	private ?ShardDefinition $shardDefinition = null;
+	/** @var bool Run the query across all shards */
+	private bool $allShards = false;
 
 	/**
 	 * @param ConnectionAdapter $connection
@@ -207,11 +209,16 @@ class ShardedQueryBuilder extends QueryBuilder {
 		return $this->innerJoin($fromAlias, $join, $alias, $condition);
 	}
 
+	public function runAcrossAllShards() {
+		$this->allShards = true;
+		return $this;
+	}
+
 	/**
 	 * @throws InvalidShardedQueryException
 	 */
 	public function validate(): void {
-		if ($this->shardDefinition) {
+		if ($this->shardDefinition && !$this->allShards) {
 			if (empty($this->getShardKeys()) && empty($this->getPrimaryKeys())) {
 				throw new InvalidShardedQueryException("No shard key or primary key set for query");
 			}

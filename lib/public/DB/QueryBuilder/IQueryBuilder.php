@@ -1000,4 +1000,11 @@ interface IQueryBuilder {
 	 * @since 9.0.0
 	 */
 	public function getColumnName($column, $tableAlias = '');
+
+	/**
+	 * Set the query to run across all shards if sharding is enabled.
+	 *
+	 * @return $this
+	 */
+	public function runAcrossAllShards();
 }
