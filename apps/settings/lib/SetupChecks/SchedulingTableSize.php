@@ -14,7 +14,7 @@ use OCP\SetupCheck\ISetupCheck;
 use OCP\SetupCheck\SetupResult;
 
 class SchedulingTableSize implements ISetupCheck {
-	const int MAX_SCHEDULING_ENTRIES = 50000;
+	const MAX_SCHEDULING_ENTRIES = 50000;
 
 	public function __construct(
 		private IL10N $l10n,
@@ -40,7 +40,9 @@ class SchedulingTableSize implements ISetupCheck {
 
 		if ($count > self::MAX_SCHEDULING_ENTRIES) {
 			return SetupResult::warning(
-				$this->l10n->t('You have more than ' . self::MAX_SCHEDULING_ENTRIES . ' rows in the scheduling objects table. Please run the expensive repair jobs via occ maintenance:repair --include-expensive')
+				$this->l10n->t('You have more than %s rows in the scheduling objects table. Please run the expensive repair jobs via occ maintenance:repair --include-expensive.', [
+					self::MAX_SCHEDULING_ENTRIES,
+				])
 			);
 		}
 		return SetupResult::success(
