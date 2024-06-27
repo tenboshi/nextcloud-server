@@ -14,11 +14,14 @@ namespace OCP\User\Backend;
  */
 interface IPasswordHashBackend {
 	/**
+	 * @return ?string the password hash hashed by `\OCP\Security\IHasher::hash()`
 	 * @since 30.0.0
 	 */
 	public function getPasswordHash(string $userId): ?string;
 
 	/**
+	 * @param string $passwordHash the password hash hashed by `\OCP\Security\IHasher::hash()`
+	 * @throws InvalidArgumentException when `$passwordHash` is not a valid hash
 	 * @since 30.0.0
 	 */
 	public function setPasswordHash(string $userId, string $passwordHash): bool;
