@@ -13,6 +13,7 @@ use OCA\Files_Sharing\Event\BeforeTemplateRenderedEvent;
 use OCA\Viewer\Event\LoadViewer;
 use OCP\Accounts\IAccountManager;
 use OCP\AppFramework\Http\ContentSecurityPolicy;
+use OCP\AppFramework\Http\Template\ExternalShareMenuAction;
 use OCP\AppFramework\Http\Template\PublicTemplateResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Services\IInitialState;
@@ -53,21 +54,18 @@ class DefaultPublicShareTemplateProvider implements IPublicShareTemplateProvider
 
 	public function renderPage(IShare $share, string $token, string $path): TemplateResponse {
 		$shareNode = $share->getNode();
-		$shareInfo = [
-			'ownerId' => '',
-			'ownerName' => '',
-			'filename' => $shareNode->getName(),
-		];
+		$ownerName = '';
+		$ownerId = '';
 
 		// Only make the share owner public if they allowed to show their name
 		$owner = $this->userManager->get($share->getShareOwner());
 		if ($owner instanceof IUser) {
 			$ownerAccount = $this->accountManager->getAccount($owner);
 
-			$ownerName = $ownerAccount->getProperty(IAccountManager::PROPERTY_DISPLAYNAME);
-			if ($ownerName->getScope() === IAccountManager::SCOPE_PUBLISHED) {
-				$shareInfo['ownerId'] = $owner->getUID();
-				$shareInfo['ownerName'] = $owner->getDisplayName();
+			$ownerNameProperty = $ownerAccount->getProperty(IAccountManager::PROPERTY_DISPLAYNAME);
+			if ($ownerNameProperty->getScope() === IAccountManager::SCOPE_PUBLISHED) {
+				$ownerName = $owner->getDisplayName();
+				$ownerId = $owner->getUID();
 			}
 		}
 
@@ -110,9 +108,21 @@ class DefaultPublicShareTemplateProvider implements IPublicShareTemplateProvider
 			'index',
 		);
 		$response->setContentSecurityPolicy($csp);
-		$response->setHeaderTitle($shareInfo['filename']);
-		if ($shareInfo['ownerName'] !== '') {
-			$response->setHeaderDetails($this->l10n->t('shared by %s', [$shareInfo['ownerName']]));
+		$response->setHeaderTitle($shareNode->getName());
+		if ($ownerName !== '') {
+			$response->setHeaderDetails($this->l10n->t('shared by %s', [$ownerName]));
+		}
+		if ($this->federatedShareProvider->isOutgoingServer2serverShareEnabled() && $view !== 'public-file-drop' && !$share->getHideDownload()) {
+			$response->setHeaderActions([
+				new ExternalShareMenuAction(
+					// TRANSLATORS The placeholder refers to the software product name as in 'Add to your Nextcloud'
+					$this->l10n->t('Add to your %s', [$this->defaults->getProductName()]),
+					'icon-external',
+					$ownerId,
+					$ownerName,
+					$shareNode->getName(),
+				),
+			]);
 		}
 
 		return $response;
