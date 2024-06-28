@@ -26,6 +26,6 @@ interface IMessageSend {
 	 * @param IMessage $message			mail message object with all required parameters to send a message
 	 * @param array $options			array of options reserved for future use
 	 */
-	public function messageSend(IMessage $message, array $option = []): void;
+	public function sendMessage(IMessage $message, array $option = []): void;
 
 }

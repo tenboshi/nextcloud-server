@@ -286,7 +286,7 @@ class IMipPlugin extends SabreIMipPlugin {
 					true
 				)));
 				// send message
-				$mailService->messageSend($message);
+				$mailService->sendMessage($message);
 			} else {
 				// construct symfony mailer message and set required parameters
 				$message = $this->mailer->createMessage();

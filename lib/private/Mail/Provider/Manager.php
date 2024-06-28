@@ -41,7 +41,7 @@ class Manager implements IManager {
 	}
 
 	/**
-	 * Determain if any mail providers are registered
+	 * Determine if any mail providers are registered
 	 *
 	 * @since 30.0.0
 	 *
@@ -138,7 +138,7 @@ class Manager implements IManager {
 	 */
 	public function findProviderById(string $id): IProvider | null {
 
-		// evaluate if we already have a cached collection of providers and return the collection if we do
+		// evaluate if we already have a cached collection of providers
 		if (!is_array($this->providersCollection)) {
 			$this->providers();
 		}
