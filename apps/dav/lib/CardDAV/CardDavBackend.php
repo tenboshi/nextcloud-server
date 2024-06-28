@@ -605,6 +605,12 @@ class CardDavBackend implements BackendInterface, SyncSupport {
 	 * @return string
 	 */
 	public function createCard($addressBookId, $cardUri, $cardData, bool $checkAlreadyExists = true) {
+
+		// evaluate if card size exceeds 5mb and fail if it does
+		if (strlen($cardData) > 5242880) {
+			throw new \Sabre\DAV\Exception\BadRequest('VCard object exceeds 5242880 bytes (5MB)');
+		}
+
 		$etag = md5($cardData);
 		$uid = $this->getUID($cardData);
 		return $this->atomic(function () use ($addressBookId, $cardUri, $cardData, $checkAlreadyExists, $etag, $uid) {
@@ -677,6 +683,12 @@ class CardDavBackend implements BackendInterface, SyncSupport {
 	 * @return string
 	 */
 	public function updateCard($addressBookId, $cardUri, $cardData) {
+
+		// evaluate if card size exceeds 5mb and fail if it does
+		if (strlen($cardData) > 5242880) {
+			throw new \Sabre\DAV\Exception\BadRequest('VCard object exceeds 5242880 bytes (5MB)');
+		}
+		
 		$uid = $this->getUID($cardData);
 		$etag = md5($cardData);
 
