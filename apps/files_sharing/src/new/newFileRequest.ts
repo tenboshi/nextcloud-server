@@ -29,6 +29,7 @@ export const entry = {
 
 		// Init vue app
 		const NewFileRequestDialog = new Vue({
+			name: 'NewFileRequestDialogRoot',
 			render: (h) => h(
 				NewFileRequestDialogVue,
 				{
