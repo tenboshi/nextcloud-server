@@ -610,7 +610,7 @@ class CardDavBackend implements BackendInterface, SyncSupport {
 	public function createCard($addressBookId, $cardUri, $cardData, bool $checkAlreadyExists = true) {
 
 		// evaluate if card size exceeds defined limit
-		$cardSizeLimit = (int) $this->config->getAppValue(Application::APP_ID, 'card_size_limit', 5242880);
+		$cardSizeLimit = (int) $this->config->getAppValue(Application::APP_ID, 'card_size_limit', '5242880');
 		if (strlen($cardData) > $cardSizeLimit) {
 			throw new \Sabre\DAV\Exception\BadRequest("VCard object exceeds $cardSizeLimit bytes");
 		}
@@ -689,7 +689,7 @@ class CardDavBackend implements BackendInterface, SyncSupport {
 	public function updateCard($addressBookId, $cardUri, $cardData) {
 
 		// evaluate if card size exceeds defined limit
-		$cardSizeLimit = (int) $this->config->getAppValue(Application::APP_ID, 'card_size_limit', 5242880);
+		$cardSizeLimit = (int) $this->config->getAppValue(Application::APP_ID, 'card_size_limit', '5242880');
 		if (strlen($cardData) > $cardSizeLimit) {
 			throw new \Sabre\DAV\Exception\BadRequest("VCard object exceeds $cardSizeLimit bytes");
 		}
