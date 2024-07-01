@@ -11,6 +11,7 @@ use Doctrine\Common\EventManager;
 use Doctrine\DBAL\Configuration;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Event\Listeners\OracleSessionInit;
+use OC\DB\Middlewares\SQLiteCaseSensitiveLike;
 use OC\SystemConfig;
 
 /**
@@ -106,6 +107,9 @@ class ConnectionFactory {
 		// FIXME $eventManager = new EventManager();
 		// FIXME $eventManager->addEventSubscriber(new SetTransactionIsolationLevel());
 		$additionalConnectionParams = array_merge($this->createConnectionParams(), $additionalConnectionParams);
+
+		$doctrineConfiguration = new Configuration();
+
 		switch ($normalizedType) {
 			case 'pgsql':
 				// pg_connect used by Doctrine DBAL does not support URI notation (enclosed in brackets)
@@ -137,16 +141,24 @@ class ConnectionFactory {
 
 			case 'sqlite3':
 				$journalMode = $additionalConnectionParams['sqlite.journal_mode'];
-				$additionalConnectionParams['platform'] = new OCSqlitePlatform();
 				// FIXME $eventManager->addEventSubscriber(new SQLiteSessionInit(true, $journalMode));
+				$doctrineConfiguration->setMiddlewares(
+					new SQLiteCaseSensitiveLike(),
+				);
 				break;
 		}
 		/** @var Connection $connection */
 		$connection = DriverManager::getConnection(
 			$additionalConnectionParams,
-			new Configuration(),
+			$doctrineConfiguration,
 			// FIXME $eventManager
 		);
+
+		if ($normalizedType === 'sqlite3') {
+			$pdo = $connection->getNativeConnection();
+			$pdo->sqliteCreateFunction('md5', 'md5', 1);
+		}
+
 		return $connection;
 	}
 
